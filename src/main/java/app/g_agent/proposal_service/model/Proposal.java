@@ -45,7 +45,7 @@ public class Proposal {
     @Column(name = "contact_id", nullable = false)
     private Long contactId;
 
-    @OneToMany(mappedBy = "proposalId")
+    @OneToMany
     private Set<ProposalDocument> proposalDocuments = new HashSet<>();
 
     // Getters and Setters

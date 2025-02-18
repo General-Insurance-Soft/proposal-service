@@ -7,8 +7,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 
 @Entity
 public class ProposalDocument {
@@ -16,11 +14,6 @@ public class ProposalDocument {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-
-    @Column(name = "proposal_id", nullable = false)
-    @ManyToOne
-	@JoinColumn(name = "proposal_id", nullable = false)
-    private Proposal proposalId;
 
     @Column(name = "folder_name", nullable = false)
     private String folderName;
@@ -48,14 +41,6 @@ public class ProposalDocument {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public Proposal getProposalId() {
-        return proposalId;
-    }
-
-    public void setProposalId(Proposal proposalId) {
-        this.proposalId = proposalId;
     }
 
     public String getFolderName() {

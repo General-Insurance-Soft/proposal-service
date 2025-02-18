@@ -11,7 +11,6 @@ public class ProposalDto {
 
     private Long id;
 
-    @NotNull(message = "Insurance company ID is required")
     @JsonProperty("insurance_company_id")
     private Long insuranceCompanyId;
 

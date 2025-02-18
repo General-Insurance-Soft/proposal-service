@@ -11,9 +11,6 @@ public class ProposalDocumentDto {
 
     private Long id;
 
-    @JsonProperty("proposal_id")
-    private Long proposalId;
-
     @NotBlank(message = "Folder name is required")
     @JsonProperty("folder_name")
     private String folderName;
@@ -44,14 +41,6 @@ public class ProposalDocumentDto {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public Long getProposalId() {
-        return proposalId;
-    }
-
-    public void setProposalId(Long proposalId) {
-        this.proposalId = proposalId;
     }
 
     public String getFolderName() {

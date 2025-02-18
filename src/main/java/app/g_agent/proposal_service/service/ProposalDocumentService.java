@@ -14,7 +14,7 @@ import app.g_agent.proposal_service.repository.ProposalDocumentRepository;
 import jakarta.servlet.http.HttpServletRequest;
 
 @Service
-public class ProposalDocumetService {
+public class ProposalDocumentService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProposalService.class);
 
@@ -22,7 +22,7 @@ public class ProposalDocumetService {
     private ProposalDocumentRepository proposalDocumentRepository;
     private JwtService jwtService;
 
-    public ProposalDocumetService(ProposalDocumentRepository proposalDocumentRepository, JwtService jwtService) {
+    public ProposalDocumentService(ProposalDocumentRepository proposalDocumentRepository, JwtService jwtService) {
        
         this.proposalDocumentRepository = proposalDocumentRepository;
         this.jwtService = jwtService;

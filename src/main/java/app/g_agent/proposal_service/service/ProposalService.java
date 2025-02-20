@@ -12,6 +12,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import app.g_agent.proposal_service.dto.ProposalDocumentDto;
 import app.g_agent.proposal_service.dto.ProposalDto;
 import app.g_agent.proposal_service.model.Proposal;
 import app.g_agent.proposal_service.model.ProposalDocument;
@@ -59,17 +60,31 @@ public class ProposalService {
         Optional<Proposal> proposalOpt = proposalRepository.findById(id);
 
         if (proposalOpt.isPresent()) {
+            Proposal proposal = proposalOpt.get();
             ProposalDto proposalDto = new ProposalDto();
-            proposalDto.setId(proposalOpt.get().getId());
-            proposalDto.setInsuranceCompanyId(proposalOpt.get().getInsuranceCompanyId());
-            proposalDto.setPolicyTypeId(proposalOpt.get().getPolicyTypeId());
-            proposalDto.setStartDate(proposalOpt.get().getStartDate());
-            proposalDto.setEndDate(proposalOpt.get().getEndDate());
-            proposalDto.setCompanyId(proposalOpt.get().getCompanyId());
-            proposalDto.setContactId(proposalOpt.get().getContactId());
-            proposalDto.setUpdatedBy(proposalOpt.get().getUpdatedBy());
-            proposalDto.setCreatedAt(proposalOpt.get().getCreatedAt());
-            proposalDto.setUpdatedAt(proposalOpt.get().getUpdatedAt());
+            proposalDto.setId(proposal.getId());
+            proposalDto.setInsuranceCompanyId(proposal.getInsuranceCompanyId());
+            proposalDto.setPolicyTypeId(proposal.getPolicyTypeId());
+            proposalDto.setStartDate(proposal.getStartDate());
+            proposalDto.setEndDate(proposal.getEndDate());
+            proposalDto.setCompanyId(proposal.getCompanyId());
+            proposalDto.setContactId(proposal.getContactId());
+            proposalDto.setUpdatedBy(proposal.getUpdatedBy());
+            proposalDto.setCreatedAt(proposal.getCreatedAt());
+            proposalDto.setUpdatedAt(proposal.getUpdatedAt());
+
+            Set<ProposalDocumentDto> proposalDocumentDtos = proposal.getProposalDocuments().stream().map(document -> {
+                ProposalDocumentDto documentDto = new ProposalDocumentDto();
+                documentDto.setId(document.getId());
+                documentDto.setFolderName(document.getFolderName());
+                documentDto.setDocumentName(document.getDocumentName());
+                documentDto.setBlobUrl(document.getBlobUrl());
+                documentDto.setUpdatedBy(document.getUpdatedBy());
+                documentDto.setCreatedAt(document.getCreatedAt());
+                return documentDto;
+            }).collect(Collectors.toSet());
+
+            proposalDto.setProposalDocuments(proposalDocumentDtos);
 
             return proposalDto;
         } else {
@@ -180,6 +195,20 @@ public class ProposalService {
             proposalDto.setUpdatedBy(proposal.getUpdatedBy());
             proposalDto.setCreatedAt(proposal.getCreatedAt());
             proposalDto.setUpdatedAt(proposal.getUpdatedAt());
+
+            Set<ProposalDocumentDto> proposalDocumentDtos = proposal.getProposalDocuments().stream().map(document -> {
+                ProposalDocumentDto documentDto = new ProposalDocumentDto();
+                documentDto.setId(document.getId());
+                documentDto.setFolderName(document.getFolderName());
+                documentDto.setDocumentName(document.getDocumentName());
+                documentDto.setBlobUrl(document.getBlobUrl());
+                documentDto.setUpdatedBy(document.getUpdatedBy());
+                documentDto.setCreatedAt(document.getCreatedAt());
+                return documentDto;
+            }).collect(Collectors.toSet());
+
+            proposalDto.setProposalDocuments(proposalDocumentDtos);
+
             return proposalDto;
         }).collect(Collectors.toList());
     }

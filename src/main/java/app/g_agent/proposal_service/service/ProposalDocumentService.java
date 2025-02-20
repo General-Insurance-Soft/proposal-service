@@ -101,7 +101,6 @@ public class ProposalDocumentService {
             proposalDocumentDto.setBlobUrl(proposalDocumentOpt.get().getBlobUrl());
             proposalDocumentDto.setUpdatedBy(proposalDocumentOpt.get().getUpdatedBy());
             proposalDocumentDto.setCreatedAt(proposalDocumentOpt.get().getCreatedAt());
-            proposalDocumentDto.setUploadedAt(proposalDocumentOpt.get().getUploadedAt());
 
             return proposalDocumentDto;
         } else {
@@ -121,7 +120,6 @@ public class ProposalDocumentService {
             proposalDocumentDto.setBlobUrl(proposalDocument.getBlobUrl());
             proposalDocumentDto.setUpdatedBy(proposalDocument.getUpdatedBy());
             proposalDocumentDto.setCreatedAt(proposalDocument.getCreatedAt());
-            proposalDocumentDto.setUploadedAt(proposalDocument.getUploadedAt());
             return proposalDocumentDto;
         }).collect(Collectors.toList());
     }

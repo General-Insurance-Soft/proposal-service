@@ -35,7 +35,7 @@ public class JwtService {
 	// "organization-id
 	// "authorities
 	public Object getTokenValue(String token, String key) {
-		logger.info("Extract JWT value");
+		logger.info("Extract JWT value: "+ token);
 		Claims claims = this.extractAllClaims(token);
 		return claims.get(key);
 

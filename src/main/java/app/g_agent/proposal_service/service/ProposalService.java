@@ -83,7 +83,7 @@ public class ProposalService {
 
         Long userId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "user-id").toString());
         Long orgId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "organization-id").toString());
-
+        logger.info("user ID: ==============================>" + userId);
         proposal.setInsuranceCompanyId(proposalDto.getInsuranceCompanyId());
         proposal.setPolicyTypeId(proposalDto.getPolicyTypeId());
         proposal.setStartDate(proposalDto.getStartDate());

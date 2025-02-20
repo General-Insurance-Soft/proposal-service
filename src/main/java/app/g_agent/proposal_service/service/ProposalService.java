@@ -1,8 +1,10 @@
 package app.g_agent.proposal_service.service;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -156,6 +158,26 @@ public class ProposalService {
             }
             throw ex; // Rethrow if not related to constraint violation
         }
+    }
+
+    @Transactional
+    public List<ProposalDto> getProposals(HttpServletRequest request) throws Exception {
+        List<Proposal> proposals = proposalRepository.findAll();
+
+        return proposals.stream().map(proposal -> {
+            ProposalDto proposalDto = new ProposalDto();
+            proposalDto.setId(proposal.getId());
+            proposalDto.setInsuranceCompanyId(proposal.getInsuranceCompanyId());
+            proposalDto.setPolicyTypeId(proposal.getPolicyTypeId());
+            proposalDto.setStartDate(proposal.getStartDate());
+            proposalDto.setEndDate(proposal.getEndDate());
+            proposalDto.setCompanyId(proposal.getCompanyId());
+            proposalDto.setContactId(proposal.getContactId());
+            proposalDto.setUpdatedBy(proposal.getUpdatedBy());
+            proposalDto.setCreatedAt(proposal.getCreatedAt());
+            proposalDto.setUpdatedAt(proposal.getUpdatedAt());
+            return proposalDto;
+        }).collect(Collectors.toList());
     }
 
 }

@@ -45,45 +45,6 @@ public class ProposalService {
     }
 
     @Transactional
-    public void createProposal(HttpServletRequest request, ProposalDto proposalDto) throws Exception {
-        Proposal proposal = new Proposal();
-
-        Long userId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "user-id").toString());
-        Long orgId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "organization-id").toString());
-
-        proposal.setInsuranceCompanyId(proposalDto.getInsuranceCompanyId());
-        proposal.setPolicyTypeId(proposalDto.getPolicyTypeId());
-        proposal.setStartDate(proposalDto.getStartDate());
-        proposal.setEndDate(proposalDto.getEndDate());
-        proposal.setCompanyId(orgId);
-        proposal.setContactId(proposalDto.getContactId());
-        proposal.setUpdatedBy(Long.valueOf(userId));
-
-        if (proposalDto.getProposalDocuments() != null) {
-            Set<ProposalDocument> proposalDocuments = new HashSet<>();
-            proposalDto.getProposalDocuments().forEach(documentDto -> {
-                ProposalDocument document = new ProposalDocument();
-                document.setFolderName(documentDto.getFolderName());
-                document.setDocumentName(documentDto.getDocumentName());
-                document.setBlobUrl(documentDto.getBlobUrl());
-                document.setUpdatedBy(documentDto.getUpdatedBy());
-                proposalDocuments.add(document);
-            });
-            proposal.setProposalDocuments(proposalDocuments);
-        }
-
-        try {
-            proposalRepository.save(proposal);
-        } catch (DataIntegrityViolationException ex) {
-            if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
-                logger.info("Proposal error ==========> id: " + ex.getMessage());
-                throw new Exception("This proposal already exists.");
-            }
-            throw ex; // Rethrow if not related to constraint violation
-        }
-    }
-
-    @Transactional
     public void deleteProposal(HttpServletRequest request, Long id) throws Exception {
         Optional<Proposal> proposalOpt = proposalRepository.findById(id);
 
@@ -117,6 +78,47 @@ public class ProposalService {
     }
 
     @Transactional
+    public void createProposal(HttpServletRequest request, ProposalDto proposalDto) throws Exception {
+        Proposal proposal = new Proposal();
+
+        Long userId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "user-id").toString());
+        Long orgId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "organization-id").toString());
+
+        proposal.setInsuranceCompanyId(proposalDto.getInsuranceCompanyId());
+        proposal.setPolicyTypeId(proposalDto.getPolicyTypeId());
+        proposal.setStartDate(proposalDto.getStartDate());
+        proposal.setEndDate(proposalDto.getEndDate());
+        proposal.setCompanyId(orgId);
+        proposal.setContactId(proposalDto.getContactId());
+        proposal.setUpdatedBy(Long.valueOf(userId));
+
+        if (proposalDto.getProposalDocuments() != null) {
+            Set<ProposalDocument> proposalDocuments = new HashSet<>();
+            proposalDto.getProposalDocuments().forEach(documentDto -> {
+                ProposalDocument document = new ProposalDocument();
+                document.setFolderName(documentDto.getFolderName());
+                document.setDocumentName(documentDto.getDocumentName());
+                document.setBlobUrl(documentDto.getBlobUrl());
+                document.setUpdatedBy(Long.valueOf(userId));
+                document.setProposal(proposal); // Set the proposal reference
+                proposalDocuments.add(document);
+            });
+            proposal.setProposalDocuments(proposalDocuments);
+        }
+
+        try {
+            proposalRepository.save(proposal);
+            proposalDocumentRepository.saveAll(proposal.getProposalDocuments()); // Save the proposal documents
+        } catch (DataIntegrityViolationException ex) {
+            if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
+                logger.info("Proposal error ==========> id: " + ex.getMessage());
+                throw new Exception("This proposal already exists.");
+            }
+            throw ex; // Rethrow if not related to constraint violation
+        }
+    }
+
+    @Transactional
     public void updateProposal(HttpServletRequest request, ProposalDto proposalDto, Long id) throws Exception {
         Optional<Proposal> proposalOpt = proposalRepository.findById(id);
 
@@ -143,7 +145,8 @@ public class ProposalService {
                 document.setFolderName(documentDto.getFolderName());
                 document.setDocumentName(documentDto.getDocumentName());
                 document.setBlobUrl(documentDto.getBlobUrl());
-                document.setUpdatedBy(documentDto.getUpdatedBy());
+                document.setUpdatedBy(Long.valueOf(userId));
+                document.setProposal(proposal); // Set the proposal reference
                 proposalDocuments.add(document);
             });
             proposal.setProposalDocuments(proposalDocuments);
@@ -151,6 +154,7 @@ public class ProposalService {
 
         try {
             proposalRepository.save(proposal);
+            proposalDocumentRepository.saveAll(proposal.getProposalDocuments()); // Save the proposal documents
         } catch (DataIntegrityViolationException ex) {
             if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
                 logger.info("Proposal error ==========> id: " + ex.getMessage());

@@ -10,6 +10,8 @@ import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
@@ -18,6 +20,10 @@ public class ProposalDocument {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "proposal_id", nullable = false)
+    private Proposal proposal;
 
     @Column(name = "folder_name", nullable = false)
     private String folderName;
@@ -45,6 +51,14 @@ public class ProposalDocument {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Proposal getProposal() {
+        return proposal;
+    }
+
+    public void setProposal(Proposal proposal) {
+        this.proposal = proposal;
     }
 
     public String getFolderName() {

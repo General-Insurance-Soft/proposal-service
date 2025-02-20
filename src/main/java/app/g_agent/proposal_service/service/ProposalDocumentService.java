@@ -1,6 +1,8 @@
 package app.g_agent.proposal_service.service;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,17 +20,13 @@ public class ProposalDocumentService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProposalService.class);
 
-
     private ProposalDocumentRepository proposalDocumentRepository;
     private JwtService jwtService;
 
     public ProposalDocumentService(ProposalDocumentRepository proposalDocumentRepository, JwtService jwtService) {
-       
         this.proposalDocumentRepository = proposalDocumentRepository;
         this.jwtService = jwtService;
     }
-
-
 
     @Transactional
     public void createProposalDocument(HttpServletRequest request, ProposalDocumentDto proposalDocumentDto) throws Exception {
@@ -97,6 +95,7 @@ public class ProposalDocumentService {
         if (proposalDocumentOpt.isPresent()) {
             ProposalDocumentDto proposalDocumentDto = new ProposalDocumentDto();
             proposalDocumentDto.setId(proposalDocumentOpt.get().getId());
+            proposalDocumentDto.setProposalId(proposalDocumentOpt.get().getProposal().getId());
             proposalDocumentDto.setFolderName(proposalDocumentOpt.get().getFolderName());
             proposalDocumentDto.setDocumentName(proposalDocumentOpt.get().getDocumentName());
             proposalDocumentDto.setBlobUrl(proposalDocumentOpt.get().getBlobUrl());
@@ -108,5 +107,22 @@ public class ProposalDocumentService {
         } else {
             throw new Exception("The proposal document does not exist");
         }
+    }
+
+    public List<ProposalDocumentDto> getProposalDocuments(HttpServletRequest request) throws Exception {
+        List<ProposalDocument> proposalDocuments = proposalDocumentRepository.findAll();
+
+        return proposalDocuments.stream().map(proposalDocument -> {
+            ProposalDocumentDto proposalDocumentDto = new ProposalDocumentDto();
+            proposalDocumentDto.setId(proposalDocument.getId());
+            proposalDocumentDto.setProposalId(proposalDocument.getProposal().getId());
+            proposalDocumentDto.setFolderName(proposalDocument.getFolderName());
+            proposalDocumentDto.setDocumentName(proposalDocument.getDocumentName());
+            proposalDocumentDto.setBlobUrl(proposalDocument.getBlobUrl());
+            proposalDocumentDto.setUpdatedBy(proposalDocument.getUpdatedBy());
+            proposalDocumentDto.setCreatedAt(proposalDocument.getCreatedAt());
+            proposalDocumentDto.setUploadedAt(proposalDocument.getUploadedAt());
+            return proposalDocumentDto;
+        }).collect(Collectors.toList());
     }
 }

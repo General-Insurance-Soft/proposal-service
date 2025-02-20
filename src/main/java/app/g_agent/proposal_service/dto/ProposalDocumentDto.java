@@ -33,6 +33,8 @@ public class ProposalDocumentDto {
     @JsonProperty("updated_by")
     private Long updatedBy;
 
+    private Long proposalId;
+
     // Getters and Setters
 
     public Long getId() {
@@ -89,5 +91,13 @@ public class ProposalDocumentDto {
 
     public void setUpdatedBy(Long updatedBy) {
         this.updatedBy = updatedBy;
+    }
+
+    public Long getProposalId() {
+        return proposalId;
+    }
+
+    public void setProposalId(Long proposalId) {
+        this.proposalId = proposalId;
     }
 }

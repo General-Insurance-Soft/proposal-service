@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import jakarta.persistence.Column;
@@ -35,11 +37,13 @@ public class Proposal {
     @Column(name = "end_date")
     private LocalDate endDate;
 
-    @Column(name = "created_at", updatable = false)
+    @CreatedDate
+    @Column(updatable = false, name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @LastModifiedDate
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;;
 
     @Column(name = "updated_by", nullable = false)
     private Long updatedBy;

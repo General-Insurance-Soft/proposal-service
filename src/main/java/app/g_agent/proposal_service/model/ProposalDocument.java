@@ -2,6 +2,7 @@ package app.g_agent.proposal_service.model;
 
 import java.time.LocalDateTime;
 
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import jakarta.persistence.Column;
@@ -34,7 +35,8 @@ public class ProposalDocument {
     @Column(name = "blob_url", nullable = false)
     private String blobUrl;
 
-    @Column(name = "created_at", updatable = false)
+    @CreatedDate
+    @Column(updatable = false, name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_by", nullable = false)

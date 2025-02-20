@@ -153,23 +153,8 @@ public class ProposalService {
         proposal.setContactId(proposalDto.getContactId());
         proposal.setUpdatedBy(Long.valueOf(userId));
 
-        if (proposalDto.getProposalDocuments() != null) {
-            Set<ProposalDocument> proposalDocuments = new HashSet<>();
-            proposalDto.getProposalDocuments().forEach(documentDto -> {
-                ProposalDocument document = new ProposalDocument();
-                document.setFolderName(documentDto.getFolderName());
-                document.setDocumentName(documentDto.getDocumentName());
-                document.setBlobUrl(documentDto.getBlobUrl());
-                document.setUpdatedBy(Long.valueOf(userId));
-                document.setProposal(proposal); // Set the proposal reference
-                proposalDocuments.add(document);
-            });
-            proposal.setProposalDocuments(proposalDocuments);
-        }
-
         try {
             proposalRepository.save(proposal);
-            proposalDocumentRepository.saveAll(proposal.getProposalDocuments()); // Save the proposal documents
         } catch (DataIntegrityViolationException ex) {
             if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
                 logger.info("Proposal error ==========> id: " + ex.getMessage());

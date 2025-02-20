@@ -1,8 +1,10 @@
 package app.g_agent.proposal_service.dto;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.validation.constraints.NotNull;
@@ -11,18 +13,21 @@ public class ProposalDto {
 
     private Long id;
 
+    @NotNull(message = "insurance_company_id is required")
     @JsonProperty("insurance_company_id")
     private Long insuranceCompanyId;
 
-    @NotNull(message = "Policy type ID is required")
+    @NotNull(message = "policy_type_id is required")
     @JsonProperty("policy_type_id")
     private Long policyTypeId;
 
     @JsonProperty("start_date")
-    private LocalDateTime startDate;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate startDate;
 
     @JsonProperty("end_date")
-    private LocalDateTime endDate;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate endDate;
 
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
@@ -30,7 +35,6 @@ public class ProposalDto {
     @JsonProperty("updated_at")
     private LocalDateTime updatedAt;
 
-    @NotNull(message = "Updated by is required")
     @JsonProperty("updated_by")
     private Long updatedBy;
 
@@ -71,19 +75,19 @@ public class ProposalDto {
         this.policyTypeId = policyTypeId;
     }
 
-    public LocalDateTime getStartDate() {
+    public LocalDate getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(LocalDateTime startDate) {
+    public void setStartDate(LocalDate startDate) {
         this.startDate = startDate;
     }
 
-    public LocalDateTime getEndDate() {
+    public LocalDate getEndDate() {
         return endDate;
     }
 
-    public void setEndDate(LocalDateTime endDate) {
+    public void setEndDate(LocalDate endDate) {
         this.endDate = endDate;
     }
 

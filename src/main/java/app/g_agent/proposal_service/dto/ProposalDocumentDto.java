@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 public class ProposalDocumentDto {
 
@@ -26,13 +25,10 @@ public class ProposalDocumentDto {
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
 
-    @JsonProperty("uploaded_at")
-    private LocalDateTime uploadedAt;
-
-    @NotNull(message = "Updated by is required")
     @JsonProperty("updated_by")
     private Long updatedBy;
 
+    @JsonProperty("proposal_id")
     private Long proposalId;
 
     // Getters and Setters
@@ -75,14 +71,6 @@ public class ProposalDocumentDto {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUploadedAt() {
-        return uploadedAt;
-    }
-
-    public void setUploadedAt(LocalDateTime uploadedAt) {
-        this.uploadedAt = uploadedAt;
     }
 
     public Long getUpdatedBy() {

@@ -37,9 +37,6 @@ public class ProposalDocument {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "uploaded_at", updatable = false)
-    private LocalDateTime uploadedAt;
-
     @Column(name = "updated_by", nullable = false)
     private Long updatedBy;
 
@@ -91,14 +88,6 @@ public class ProposalDocument {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUploadedAt() {
-        return uploadedAt;
-    }
-
-    public void setUploadedAt(LocalDateTime uploadedAt) {
-        this.uploadedAt = uploadedAt;
     }
 
     public Long getUpdatedBy() {

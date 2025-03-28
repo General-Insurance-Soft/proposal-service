@@ -84,6 +84,8 @@ public class ProposalService {
             proposalDto.setUpdatedBy(proposal.getUpdatedBy());
             proposalDto.setCreatedAt(proposal.getCreatedAt());
             proposalDto.setUpdatedAt(proposal.getUpdatedAt());
+            proposalDto.setReferenceNumber(proposal.getReferenceNumber());
+            
 
             Set<ProposalDocumentDto> proposalDocumentDtos = proposal.getProposalDocuments().stream().map(document -> {
                 ProposalDocumentDto documentDto = new ProposalDocumentDto();
@@ -118,6 +120,7 @@ public class ProposalService {
         proposal.setCompanyId(orgId);
         proposal.setContactId(proposalDto.getContactId());
         proposal.setUpdatedBy(Long.valueOf(userId));
+        proposal.setReferenceNumber(proposalDto.getReferenceNumber());
 
         if (proposalDto.getProposalDocuments() != null) {
             Set<ProposalDocument> proposalDocuments = new HashSet<>();
@@ -169,6 +172,7 @@ public class ProposalService {
         proposal.setCompanyId(proposalDto.getCompanyId());
         proposal.setContactId(proposalDto.getContactId());
         proposal.setUpdatedBy(Long.valueOf(userId));
+        proposal.setReferenceNumber(proposalDto.getReferenceNumber());
 
         try {
             proposalRepository.save(proposal);
@@ -197,6 +201,7 @@ public class ProposalService {
             proposalDto.setUpdatedBy(proposal.getUpdatedBy());
             proposalDto.setCreatedAt(proposal.getCreatedAt());
             proposalDto.setUpdatedAt(proposal.getUpdatedAt());
+            proposalDto.setReferenceNumber(proposal.getReferenceNumber());
 
             Set<ProposalDocumentDto> proposalDocumentDtos = proposal.getProposalDocuments().stream().map(document -> {
                 ProposalDocumentDto documentDto = new ProposalDocumentDto();

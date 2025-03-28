@@ -17,134 +17,148 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
+@Table(uniqueConstraints = { @UniqueConstraint(columnNames = { "reference_number", "contact_id" }) })
 @EntityListeners(AuditingEntityListener.class)
 public class Proposal {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @Column(name = "insurance_company_id", nullable = false)
-    private Long insuranceCompanyId;
+	@Column(name = "insurance_company_id", nullable = false)
+	private Long insuranceCompanyId;
 
-    @Column(name = "policy_type_id", nullable = false)
-    private Long policyTypeId;
+	@Column(name = "policy_type_id", nullable = false)
+	private Long policyTypeId;
 
-    @Column(name = "start_date")
-    private LocalDate startDate;
+	@Column(name = "start_date")
+	private LocalDate startDate;
 
-    @Column(name = "end_date")
-    private LocalDate endDate;
+	@Column(name = "end_date")
+	private LocalDate endDate;
 
-    @CreatedDate
-    @Column(updatable = false, name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+	@CreatedDate
+	@Column(updatable = false, name = "created_at", nullable = false)
+	private LocalDateTime createdAt;
 
-    @LastModifiedDate
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;;
+	@LastModifiedDate
+	@Column(name = "updated_at", nullable = false)
+	private LocalDateTime updatedAt;;
 
-    @Column(name = "updated_by", nullable = false)
-    private Long updatedBy;
+	@Column(name = "updated_by", nullable = false)
+	private Long updatedBy;
 
-    @Column(name = "company_id", nullable = false)
-    private Long companyId;
+	@Column(name = "company_id", nullable = false)
+	private Long companyId;
 
-    @Column(name = "contact_id", nullable = false)
-    private Long contactId;
+	@Column(name = "contact_id", nullable = false)
+	private Long contactId;
 
-    @OneToMany(mappedBy = "proposal", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<ProposalDocument> proposalDocuments = new HashSet<>();
+	@Column(name = "reference_number", nullable = false)
+	private String referenceNumber;
 
-    // Getters and Setters
+	@OneToMany(mappedBy = "proposal", cascade = CascadeType.ALL, orphanRemoval = true)
+	private Set<ProposalDocument> proposalDocuments = new HashSet<>();
 
-    public Long getId() {
-        return id;
-    }
+	// Getters and Setters
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+	public Long getId() {
+		return id;
+	}
 
-    public Long getInsuranceCompanyId() {
-        return insuranceCompanyId;
-    }
+	public void setReferenceNumber(String referenceNumber) {
+		this.referenceNumber = referenceNumber;
+	}
 
-    public void setInsuranceCompanyId(Long insuranceCompanyId) {
-        this.insuranceCompanyId = insuranceCompanyId;
-    }
+	public String getReferenceNumber() {
+		return referenceNumber;
+	}
 
-    public Set<ProposalDocument> getProposalDocuments() {
-        return proposalDocuments;
-    }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public void setProposalDocuments(Set<ProposalDocument> proposalDocuments) {
-        this.proposalDocuments = proposalDocuments;
-    }
+	public Long getInsuranceCompanyId() {
+		return insuranceCompanyId;
+	}
 
-    public Long getPolicyTypeId() {
-        return policyTypeId;
-    }
+	public void setInsuranceCompanyId(Long insuranceCompanyId) {
+		this.insuranceCompanyId = insuranceCompanyId;
+	}
 
-    public void setPolicyTypeId(Long policyTypeId) {
-        this.policyTypeId = policyTypeId;
-    }
+	public Set<ProposalDocument> getProposalDocuments() {
+		return proposalDocuments;
+	}
 
-    public LocalDate getStartDate() {
-        return startDate;
-    }
+	public void setProposalDocuments(Set<ProposalDocument> proposalDocuments) {
+		this.proposalDocuments = proposalDocuments;
+	}
 
-    public void setStartDate(LocalDate startDate) {
-        this.startDate = startDate;
-    }
+	public Long getPolicyTypeId() {
+		return policyTypeId;
+	}
 
-    public LocalDate getEndDate() {
-        return endDate;
-    }
+	public void setPolicyTypeId(Long policyTypeId) {
+		this.policyTypeId = policyTypeId;
+	}
 
-    public void setEndDate(LocalDate endDate) {
-        this.endDate = endDate;
-    }
+	public LocalDate getStartDate() {
+		return startDate;
+	}
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+	public void setStartDate(LocalDate startDate) {
+		this.startDate = startDate;
+	}
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+	public LocalDate getEndDate() {
+		return endDate;
+	}
 
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
+	public void setEndDate(LocalDate endDate) {
+		this.endDate = endDate;
+	}
 
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
 
-    public Long getUpdatedBy() {
-        return updatedBy;
-    }
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
 
-    public void setUpdatedBy(Long updatedBy) {
-        this.updatedBy = updatedBy;
-    }
+	public LocalDateTime getUpdatedAt() {
+		return updatedAt;
+	}
 
-    public Long getCompanyId() {
-        return companyId;
-    }
+	public void setUpdatedAt(LocalDateTime updatedAt) {
+		this.updatedAt = updatedAt;
+	}
 
-    public void setCompanyId(Long companyId) {
-        this.companyId = companyId;
-    }
+	public Long getUpdatedBy() {
+		return updatedBy;
+	}
 
-    public Long getContactId() {
-        return contactId;
-    }
+	public void setUpdatedBy(Long updatedBy) {
+		this.updatedBy = updatedBy;
+	}
 
-    public void setContactId(Long contactId) {
-        this.contactId = contactId;
-    }
+	public Long getCompanyId() {
+		return companyId;
+	}
+
+	public void setCompanyId(Long companyId) {
+		this.companyId = companyId;
+	}
+
+	public Long getContactId() {
+		return contactId;
+	}
+
+	public void setContactId(Long contactId) {
+		this.contactId = contactId;
+	}
 }

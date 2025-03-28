@@ -44,7 +44,6 @@ public class ProposalDto {
 	@JsonProperty("updated_by")
 	private Long updatedBy;
 
-	@NotNull(message = "Company ID is required")
 	@JsonProperty("company_id")
 	private Long companyId;
 

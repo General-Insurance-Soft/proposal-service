@@ -18,6 +18,7 @@ import app.g_agent.proposal_service.model.Proposal;
 import app.g_agent.proposal_service.model.ProposalDocument;
 import app.g_agent.proposal_service.repository.ProposalDocumentRepository;
 import app.g_agent.proposal_service.repository.ProposalRepository;
+import app.g_agent.proposal_service.system.exception.DuplicateContactException;
 import jakarta.servlet.http.HttpServletRequest;
 
 @Service
@@ -147,7 +148,7 @@ public class ProposalService {
         } catch (DataIntegrityViolationException ex) {
             if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
                 logger.info("Proposal error ==========> id: " + ex.getMessage());
-                throw new Exception("This proposal already exists.");
+                throw new DuplicateContactException("This proposal already exists.");
             }
             throw ex; // Rethrow if not related to constraint violation
         }

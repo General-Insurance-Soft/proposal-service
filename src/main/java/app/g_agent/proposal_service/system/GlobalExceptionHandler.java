@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
+import app.g_agent.proposal_service.system.exception.DuplicateContactException;
+
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -39,6 +41,14 @@ public class GlobalExceptionHandler {
 		ErrorDetails errorDetails = new ErrorDetails(404, errorMessage, path);
 
 		return new ResponseEntity<>(errorMessage, HttpStatus.NOT_FOUND);
+	}
+
+	@ExceptionHandler(DuplicateContactException.class)
+	public ResponseEntity<String> handleDuplicateContactException(DuplicateContactException ex) {
+		Map<String, String> error = new HashMap<>();
+		error.put("name", "Error");
+		error.put("message", ex.getMessage());
+		return new ResponseEntity<>(ex.getMessage(), HttpStatus.CONFLICT);
 	}
 
 	@ExceptionHandler(Exception.class)

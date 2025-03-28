@@ -36,6 +36,18 @@ public class ProposalService {
         this.jwtService = jwtService;
     }
 
+    private class ProposalSaveResponse {
+        private String proposalId;
+
+        public String getProposalId() {
+            return proposalId;
+        }
+
+        public void setProposalId(String proposalId) {
+            this.proposalId = proposalId;
+        }
+    }
+
     public Proposal getProposalById(Long id) throws Exception {
         Optional<Proposal> proposal = proposalRepository.findById(id);
         if (proposal.isPresent()) {
@@ -93,7 +105,7 @@ public class ProposalService {
     }
 
     @Transactional
-    public void createProposal(HttpServletRequest request, ProposalDto proposalDto) throws Exception {
+    public ProposalSaveResponse createProposal(HttpServletRequest request, ProposalDto proposalDto) throws Exception {
         Proposal proposal = new Proposal();
 
         Long userId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "user-id").toString());
@@ -124,6 +136,11 @@ public class ProposalService {
         try {
             proposalRepository.save(proposal);
             proposalDocumentRepository.saveAll(proposal.getProposalDocuments()); // Save the proposal documents
+            return new ProposalSaveResponse() {
+                {
+                    setProposalId(proposal.getId().toString());
+                }
+            };
         } catch (DataIntegrityViolationException ex) {
             if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
                 logger.info("Proposal error ==========> id: " + ex.getMessage());

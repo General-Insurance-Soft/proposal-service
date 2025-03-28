@@ -3,6 +3,7 @@ package app.g_agent.proposal_service.controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import app.g_agent.proposal_service.commons.Message;
 import app.g_agent.proposal_service.dto.ProposalDto;
+import app.g_agent.proposal_service.dto.ProposalSaveResponse;
 import app.g_agent.proposal_service.service.ProposalService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -35,15 +37,15 @@ public class ProposalController {
         Message message = new Message();
 
         try {
-            proposalService.createProposal(request, proposalDto);
+
+            return new ResponseEntity<ProposalSaveResponse>(proposalService.createProposal(request, proposalDto),
+                    HttpStatus.CREATED);
         } catch (Exception ex) {
             message.setName("Error");
             message.setMessage(ex.getMessage());
             return ResponseEntity.status(403).body(message);
         }
-        message.setName("Success");
-        message.setMessage("Proposal created successfully");
-        return ResponseEntity.ok(message);
+
     }
 
     @PutMapping("/update")

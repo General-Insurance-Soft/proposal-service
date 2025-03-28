@@ -20,6 +20,7 @@ import app.g_agent.proposal_service.repository.ProposalDocumentRepository;
 import app.g_agent.proposal_service.repository.ProposalRepository;
 import app.g_agent.proposal_service.system.exception.DuplicateContactException;
 import jakarta.servlet.http.HttpServletRequest;
+import app.g_agent.proposal_service.dto.ProposalSaveResponse;
 
 @Service
 public class ProposalService {
@@ -35,18 +36,6 @@ public class ProposalService {
         this.proposalRepository = proposalRepository;
         this.proposalDocumentRepository = proposalDocumentRepository;
         this.jwtService = jwtService;
-    }
-
-    private class ProposalSaveResponse {
-        private String proposalId;
-
-        public String getProposalId() {
-            return proposalId;
-        }
-
-        public void setProposalId(String proposalId) {
-            this.proposalId = proposalId;
-        }
     }
 
     public Proposal getProposalById(Long id) throws Exception {
@@ -86,7 +75,6 @@ public class ProposalService {
             proposalDto.setCreatedAt(proposal.getCreatedAt());
             proposalDto.setUpdatedAt(proposal.getUpdatedAt());
             proposalDto.setReferenceNumber(proposal.getReferenceNumber());
-            
 
             Set<ProposalDocumentDto> proposalDocumentDtos = proposal.getProposalDocuments().stream().map(document -> {
                 ProposalDocumentDto documentDto = new ProposalDocumentDto();

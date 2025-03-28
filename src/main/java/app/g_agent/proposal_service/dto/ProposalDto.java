@@ -48,7 +48,6 @@ public class ProposalDto {
 	@JsonProperty("company_id")
 	private Long companyId;
 
-	@NotNull(message = "Contact ID is required")
 	@JsonProperty("contact_id")
 	private Long contactId;
 

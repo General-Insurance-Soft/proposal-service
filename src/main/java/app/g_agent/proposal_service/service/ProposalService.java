@@ -185,7 +185,9 @@ public class ProposalService {
     public Page<ProposalDto> getProposals(HttpServletRequest request, int page, int size) throws Exception {
         // List<Proposal> proposals = proposalRepository.findAll();
         Long orgId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "organization-id").toString());
-
+        if (size > 100) {
+            size = 100;
+        }
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<Proposal> proposalPage = proposalRepository.findByCompanyId(pageable, orgId);
 

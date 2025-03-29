@@ -95,11 +95,14 @@ public class ProposalController {
     }
 
     @GetMapping("/get-proposals")
-    public ResponseEntity<?> getProposals(HttpServletRequest request) {
+    public ResponseEntity<?> getProposals(
+            HttpServletRequest request,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
         Message message = new Message();
 
         try {
-            return ResponseEntity.ok(proposalService.getProposals(request));
+            return ResponseEntity.ok(proposalService.getProposals(request, page, size));
         } catch (Exception ex) {
             message.setName("Error");
             message.setMessage(ex.getMessage());

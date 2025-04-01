@@ -1,6 +1,7 @@
 package app.g_agent.proposal_service.service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -10,11 +11,18 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.MultiValueMap;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import app.g_agent.proposal_service.dto.ContactAddressWrapper;
+import app.g_agent.proposal_service.dto.ContactDto;
+import app.g_agent.proposal_service.dto.LocalityDto;
 import app.g_agent.proposal_service.dto.ProposalDocumentDto;
 import app.g_agent.proposal_service.dto.ProposalDto;
 import app.g_agent.proposal_service.model.Proposal;
@@ -29,11 +37,17 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Page;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Service;
+
 @Service
 public class ProposalService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProposalService.class);
 
+    @Autowired
+    private ContactsDataClient contactsDataClient;
     private ProposalRepository proposalRepository;
     private ProposalDocumentRepository proposalDocumentRepository;
     private JwtService jwtService;
@@ -182,7 +196,8 @@ public class ProposalService {
     }
 
     @Transactional
-    public Page<ProposalDto> getProposals(HttpServletRequest request, int page, int size) throws Exception {
+    public Page<ProposalDto> getProposals(HttpServletRequest request, MultiValueMap<String, String> headers, int page,
+            int size) throws Exception {
         // List<Proposal> proposals = proposalRepository.findAll();
         Long orgId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "organization-id").toString());
         if (size > 100) {
@@ -191,7 +206,7 @@ public class ProposalService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<Proposal> proposalPage = proposalRepository.findByCompanyId(pageable, orgId);
 
-        List<Long> contacts = new ArrayList<Long>();
+        Set<Long> contacts = new HashSet<Long>();
 
         Page<ProposalDto> proposals = proposalPage.map(proposal -> {
             ProposalDto proposalDto = new ProposalDto();
@@ -219,6 +234,8 @@ public class ProposalService {
                 return documentDto;
             }).collect(Collectors.toSet());
 
+            getAdministrativeAreasData(contacts, headers);
+
             proposalDto.setProposalDocuments(proposalDocumentDtos);
 
             return proposalDto;
@@ -226,36 +243,43 @@ public class ProposalService {
 
         return proposals;
 
-        // return proposals.stream().map(proposal -> {
-        // ProposalDto proposalDto = new ProposalDto();
-        // proposalDto.setId(proposal.getId());
-        // proposalDto.setInsuranceCompanyId(proposal.getInsuranceCompanyId());
-        // proposalDto.setPolicyTypeId(proposal.getPolicyTypeId());
-        // proposalDto.setStartDate(proposal.getStartDate());
-        // proposalDto.setEndDate(proposal.getEndDate());
-        // proposalDto.setCompanyId(proposal.getCompanyId());
-        // proposalDto.setContactId(proposal.getContactId());
-        // proposalDto.setUpdatedBy(proposal.getUpdatedBy());
-        // proposalDto.setCreatedAt(proposal.getCreatedAt());
-        // proposalDto.setUpdatedAt(proposal.getUpdatedAt());
-        // proposalDto.setReferenceNumber(proposal.getReferenceNumber());
+    }
 
-        // Set<ProposalDocumentDto> proposalDocumentDtos =
-        // proposal.getProposalDocuments().stream().map(document -> {
-        // ProposalDocumentDto documentDto = new ProposalDocumentDto();
-        // documentDto.setId(document.getId());
-        // documentDto.setFolderName(document.getFolderName());
-        // documentDto.setDocumentName(document.getDocumentName());
-        // documentDto.setBlobUrl(document.getBlobUrl());
-        // documentDto.setUpdatedBy(document.getUpdatedBy());
-        // documentDto.setCreatedAt(document.getCreatedAt());
-        // return documentDto;
-        // }).collect(Collectors.toSet());
+    private void getAdministrativeAreasData(Set<Long> ids,
+            MultiValueMap<String, String> headers) {
+        logger.info("Number of admin area IDs============>: {}", ids.size());
 
-        // proposalDto.setProposalDocuments(proposalDocumentDtos);
+        headers.add("Content-Type", "application/json");
 
-        // return proposalDto;
-        // }).collect(Collectors.toList());
+        Map<String, String> flattenedHeaders = new HashMap<>();
+        headers.forEach((key, values) -> {
+            flattenedHeaders.put(key, String.join(",", values));
+        });
+
+        try {
+
+            String contactIds = ids.stream()
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(","));
+            logger.info("Request body as a string ============>: {}", ids);
+
+            List<ContactAddressWrapper> results = contactsDataClient.getContactsByIds(contactIds, flattenedHeaders);
+
+            for (ContactAddressWrapper wrapper : results) {
+                for (LocalityDto loc : wrapper.localityMapper) {
+                    System.out.println("Locality: " + loc.getName() + " (ID: " + loc.getId() + ")");
+                }
+                for (ContactDto contact : wrapper.contacts) {
+                    System.out.println("Contact: " + contact.getFirstName() + ", Phone: " + contact.getPhone());
+                }
+            }
+
+        } catch (Exception e) {
+            logger.error("Error occurred while fetching administrative areas: {}",
+                    e.getMessage());
+
+        }
+
     }
 
 }

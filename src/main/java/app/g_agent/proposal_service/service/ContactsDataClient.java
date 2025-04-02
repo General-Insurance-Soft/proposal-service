@@ -18,6 +18,6 @@ import app.g_agent.proposal_service.dto.ContactAddressWrapper;
 public interface ContactsDataClient {
 
     @GetMapping("/contact-service/api/v1/contact/get-contacts-by-ids")
-    List<ContactAddressWrapper> getContactsByIds(@RequestParam String contactIds,
+    ContactAddressWrapper getContactsByIds(@RequestParam String contactIds,
             @RequestHeader Map<String, String> headers);
 }

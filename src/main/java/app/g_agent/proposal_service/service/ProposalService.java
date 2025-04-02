@@ -35,6 +35,7 @@ import app.g_agent.proposal_service.dto.ProposalSaveResponse;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -196,7 +197,7 @@ public class ProposalService {
     }
 
     @Transactional
-    public Page<ProposalDto> getProposals(HttpServletRequest request, MultiValueMap<String, String> headers, int page,
+    public Map<String, Object> getProposals(HttpServletRequest request, MultiValueMap<String, String> headers, int page,
             int size) throws Exception {
         // List<Proposal> proposals = proposalRepository.findAll();
         Long orgId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "organization-id").toString());
@@ -234,18 +235,28 @@ public class ProposalService {
                 return documentDto;
             }).collect(Collectors.toSet());
 
-            getAdministrativeAreasData(contacts, headers);
-
             proposalDto.setProposalDocuments(proposalDocumentDtos);
 
             return proposalDto;
         });
 
-        return proposals;
+        ContactAddressWrapper contactsData = getAdministrativeAreasData(contacts, headers);
+
+        Map<String, Object> response = new HashMap<>();
+
+        response.put("totalElements", proposals.getTotalElements());
+        response.put("totalPages", proposals.getTotalPages());
+        response.put("currentPage", proposals.getNumber());
+
+        response.put("proposals", proposals.getContent());
+        response.put("contact", contactsData.contacts);
+        response.put("administrative_areas", contactsData.localityMapper);
+
+        return response;
 
     }
 
-    private void getAdministrativeAreasData(Set<Long> ids,
+    private ContactAddressWrapper getAdministrativeAreasData(Set<Long> ids,
             MultiValueMap<String, String> headers) {
         logger.info("Number of admin area IDs============>: {}", ids.size());
 
@@ -263,21 +274,22 @@ public class ProposalService {
                     .collect(Collectors.joining(","));
             logger.info("Request body as a string ============>: {}", ids);
 
-            List<ContactAddressWrapper> results = contactsDataClient.getContactsByIds(contactIds, flattenedHeaders);
+            ContactAddressWrapper results = contactsDataClient.getContactsByIds(contactIds, flattenedHeaders);
 
-            for (ContactAddressWrapper wrapper : results) {
-                for (LocalityDto loc : wrapper.localityMapper) {
-                    System.out.println("Locality: " + loc.getName() + " (ID: " + loc.getId() + ")");
-                }
-                for (ContactDto contact : wrapper.contacts) {
-                    System.out.println("Contact: " + contact.getFirstName() + ", Phone: " + contact.getPhone());
-                }
+            for (LocalityDto loc : results.localityMapper) {
+                System.out.println("Locality: " + loc.getName() + " (ID: " + loc.getId() + ")");
             }
+            for (ContactDto contact : results.contacts) {
+                System.out.println("Contact: " + contact.getFirstName() + ", Phone: " + contact.getPhone());
+            }
+
+            return results;
 
         } catch (Exception e) {
             logger.error("Error occurred while fetching administrative areas: {}",
                     e.getMessage());
-
+            ContactAddressWrapper results = new ContactAddressWrapper();
+            return results;
         }
 
     }

@@ -218,11 +218,14 @@ public class ProposalService {
             proposalDto.setEndDate(proposal.getEndDate());
             proposalDto.setCompanyId(proposal.getCompanyId());
             proposalDto.setContactId(proposal.getContactId());
-            contacts.add(proposal.getContactId());
             proposalDto.setUpdatedBy(proposal.getUpdatedBy());
+
             proposalDto.setCreatedAt(proposal.getCreatedAt());
             proposalDto.setUpdatedAt(proposal.getUpdatedAt());
             proposalDto.setReferenceNumber(proposal.getReferenceNumber());
+
+            contacts.add(proposal.getContactId());
+            contacts.add(proposal.getUpdatedBy());
 
             Set<ProposalDocumentDto> proposalDocumentDtos = proposal.getProposalDocuments().stream().map(document -> {
                 ProposalDocumentDto documentDto = new ProposalDocumentDto();

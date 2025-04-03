@@ -32,15 +32,15 @@ import app.g_agent.proposal_service.repository.ProposalRepository;
 import app.g_agent.proposal_service.system.exception.DuplicateContactException;
 import jakarta.servlet.http.HttpServletRequest;
 import app.g_agent.proposal_service.dto.ProposalSaveResponse;
+import app.g_agent.proposal_service.dto.UserDto;
+
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.stereotype.Service;
+
 
 @Service
 public class ProposalService {
@@ -49,6 +49,8 @@ public class ProposalService {
 
     @Autowired
     private ContactsDataClient contactsDataClient;
+    @Autowired
+    private UsersDataClient usersDataClient;
     private ProposalRepository proposalRepository;
     private ProposalDocumentRepository proposalDocumentRepository;
     private JwtService jwtService;
@@ -208,6 +210,7 @@ public class ProposalService {
         Page<Proposal> proposalPage = proposalRepository.findByCompanyId(pageable, orgId);
 
         Set<Long> contacts = new HashSet<Long>();
+        Set<Long> updatedByUsers = new HashSet<Long>();
 
         Page<ProposalDto> proposals = proposalPage.map(proposal -> {
             ProposalDto proposalDto = new ProposalDto();
@@ -225,7 +228,7 @@ public class ProposalService {
             proposalDto.setReferenceNumber(proposal.getReferenceNumber());
 
             contacts.add(proposal.getContactId());
-            contacts.add(proposal.getUpdatedBy());
+            updatedByUsers.add(proposal.getUpdatedBy());
 
             Set<ProposalDocumentDto> proposalDocumentDtos = proposal.getProposalDocuments().stream().map(document -> {
                 ProposalDocumentDto documentDto = new ProposalDocumentDto();
@@ -244,6 +247,7 @@ public class ProposalService {
         });
 
         ContactAddressWrapper contactsData = getAdministrativeAreasData(contacts, headers);
+        List<UserDto> updatedByUsersData = getUpdatedByData(updatedByUsers, headers);
 
         Map<String, Object> response = new HashMap<>();
 
@@ -253,6 +257,7 @@ public class ProposalService {
 
         response.put("proposals", proposals.getContent());
         response.put("contact", contactsData.contacts);
+        response.put("updatedBy", updatedByUsersData);
         response.put("administrative_areas", contactsData.localityMapper);
 
         return response;
@@ -271,20 +276,11 @@ public class ProposalService {
         });
 
         try {
+            String contactIds = this.getStringFromList(ids);
 
-            String contactIds = ids.stream()
-                    .map(String::valueOf)
-                    .collect(Collectors.joining(","));
             logger.info("Request body as a string ============>: {}", ids);
 
             ContactAddressWrapper results = contactsDataClient.getContactsByIds(contactIds, flattenedHeaders);
-
-            for (LocalityDto loc : results.localityMapper) {
-                System.out.println("Locality: " + loc.getName() + " (ID: " + loc.getId() + ")");
-            }
-            for (ContactDto contact : results.contacts) {
-                System.out.println("Contact: " + contact.getFirstName() + ", Phone: " + contact.getPhone());
-            }
 
             return results;
 
@@ -295,6 +291,41 @@ public class ProposalService {
             return results;
         }
 
+    }
+
+    private List<UserDto> getUpdatedByData(Set<Long> ids,
+            MultiValueMap<String, String> headers) {
+        logger.info("Get update by IDs, size is============>: {}", ids.size());
+
+        headers.add("Content-Type", "application/json");
+
+        Map<String, String> flattenedHeaders = new HashMap<>();
+        headers.forEach((key, values) -> {
+            flattenedHeaders.put(key, String.join(",", values));
+        });
+
+        try {
+            String stringIds = this.getStringFromList(ids);
+
+            logger.info("Request body as a string ============>: {}", stringIds);
+
+            List<UserDto> results = usersDataClient.getUsersByIds(stringIds, flattenedHeaders);
+
+            return results;
+
+        } catch (Exception e) {
+            logger.error("Error occurred while fetching users: {}",
+                    e.getMessage());
+            List<UserDto> results = new ArrayList<>();
+            return results;
+        }
+
+    }
+
+    private String getStringFromList(Set<Long> ids) {
+        return ids.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(","));
     }
 
 }

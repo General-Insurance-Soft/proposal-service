@@ -41,7 +41,6 @@ import org.springframework.data.domain.Page;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
-
 @Service
 public class ProposalService {
 
@@ -73,7 +72,8 @@ public class ProposalService {
 
     @Transactional
     public void deleteProposal(HttpServletRequest request, Long id) throws Exception {
-        Optional<Proposal> proposalOpt = proposalRepository.findById(id);
+        Long orgId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "organization-id").toString());
+        Optional<Proposal> proposalOpt = proposalRepository.findByIdAndCompanyId(id, orgId);
 
         if (proposalOpt.isPresent()) {
             proposalRepository.delete(proposalOpt.get());
@@ -83,7 +83,9 @@ public class ProposalService {
     }
 
     public ProposalDto getProposal(HttpServletRequest request, Long id) throws Exception {
-        Optional<Proposal> proposalOpt = proposalRepository.findById(id);
+        Long orgId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "organization-id").toString());
+
+        Optional<Proposal> proposalOpt = proposalRepository.findByIdAndCompanyId(id, orgId);
 
         if (proposalOpt.isPresent()) {
             Proposal proposal = proposalOpt.get();

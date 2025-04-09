@@ -112,4 +112,17 @@ public class ProposalController {
             return ResponseEntity.status(403).body(message);
         }
     }
+
+    @GetMapping("/get-by-contact")
+    public ResponseEntity<?> getProposalByContact(HttpServletRequest request, @RequestParam Long id) {
+        Message message = new Message();
+
+        try {
+            return ResponseEntity.ok(proposalService.getProposalByContact(request, id));
+        } catch (Exception ex) {
+            message.setName("Error");
+            message.setMessage(ex.getMessage());
+            return ResponseEntity.status(403).body(message);
+        }
+    }
 }

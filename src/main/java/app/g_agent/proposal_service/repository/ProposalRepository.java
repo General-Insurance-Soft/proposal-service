@@ -14,5 +14,7 @@ public interface ProposalRepository extends JpaRepository<Proposal, Long> {
 
     Optional<Proposal> findByIdAndCompanyId(Long id, Long companyId);
 
-    Page<Proposal> findByCompanyId(Pageable pageable,Long companyId);
+    Page<Proposal> findByCompanyId(Pageable pageable, Long companyId);
+
+    List<Proposal> findByContactIdAndCompanyId(Long contactId, Long companyId);
 }

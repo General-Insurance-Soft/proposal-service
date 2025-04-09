@@ -330,4 +330,45 @@ public class ProposalService {
                 .collect(Collectors.joining(","));
     }
 
+    public List<ProposalDto> getProposalByContact(HttpServletRequest request, Long id) throws Exception {
+        // List<Proposal> proposals = proposalRepository.findAll();
+        Long orgId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "organization-id").toString());
+
+        List<Proposal> proposalPage = proposalRepository.findByContactIdAndCompanyId(id, orgId);
+
+        List<ProposalDto> proposals = proposalPage.stream().map(proposal -> {
+            ProposalDto proposalDto = new ProposalDto();
+            proposalDto.setId(proposal.getId());
+            proposalDto.setInsuranceCompanyId(proposal.getInsuranceCompanyId());
+            proposalDto.setPolicyTypeId(proposal.getPolicyTypeId());
+            proposalDto.setStartDate(proposal.getStartDate());
+            proposalDto.setEndDate(proposal.getEndDate());
+            proposalDto.setCompanyId(proposal.getCompanyId());
+            proposalDto.setContactId(proposal.getContactId());
+            proposalDto.setUpdatedBy(proposal.getUpdatedBy());
+
+            proposalDto.setCreatedAt(proposal.getCreatedAt());
+            proposalDto.setUpdatedAt(proposal.getUpdatedAt());
+            proposalDto.setReferenceNumber(proposal.getReferenceNumber());
+
+            Set<ProposalDocumentDto> proposalDocumentDtos = proposal.getProposalDocuments().stream().map(document -> {
+                ProposalDocumentDto documentDto = new ProposalDocumentDto();
+                documentDto.setId(document.getId());
+                documentDto.setFolderName(document.getFolderName());
+                documentDto.setDocumentName(document.getDocumentName());
+                documentDto.setBlobUrl(document.getBlobUrl());
+                documentDto.setUpdatedBy(document.getUpdatedBy());
+                documentDto.setCreatedAt(document.getCreatedAt());
+                return documentDto;
+            }).collect(Collectors.toSet());
+
+            proposalDto.setProposalDocuments(proposalDocumentDtos);
+
+            return proposalDto;
+        }).collect(Collectors.toList());
+
+        return proposals;
+
+    }
+
 }

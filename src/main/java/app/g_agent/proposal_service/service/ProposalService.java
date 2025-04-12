@@ -1,6 +1,7 @@
 package app.g_agent.proposal_service.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -38,6 +39,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -205,48 +207,64 @@ public class ProposalService {
             int size) throws Exception {
         // List<Proposal> proposals = proposalRepository.findAll();
         Long orgId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "organization-id").toString());
-        if (size > 100) {
-            size = 100;
-        }
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Proposal> proposalPage = proposalRepository.findByCompanyId(pageable, orgId);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("created_at").descending());
+        Page<Object[]> proposalPage = proposalRepository.findLatestProposalsPerContact(pageable, orgId);
 
         Set<Long> contacts = new HashSet<Long>();
         Set<Long> updatedByUsers = new HashSet<Long>();
 
-        Page<ProposalDto> proposals = proposalPage.map(proposal -> {
+        List<ProposalDto> dtoList = new ArrayList<>();
+        for (Object[] row : proposalPage.getContent()) {
             ProposalDto proposalDto = new ProposalDto();
-            proposalDto.setId(proposal.getId());
-            proposalDto.setInsuranceCompanyId(proposal.getInsuranceCompanyId());
-            proposalDto.setPolicyTypeId(proposal.getPolicyTypeId());
-            proposalDto.setStartDate(proposal.getStartDate());
-            proposalDto.setEndDate(proposal.getEndDate());
-            proposalDto.setCompanyId(proposal.getCompanyId());
-            proposalDto.setContactId(proposal.getContactId());
-            proposalDto.setUpdatedBy(proposal.getUpdatedBy());
+            proposalDto.setId((Long) row[5]);
+            proposalDto.setInsuranceCompanyId((Long) row[6]);
+            proposalDto.setPolicyTypeId((Long) row[7]);
+            // proposalDto.setStartDate(row[1]);
+            proposalDto.setStartDate(((java.sql.Date) row[1]).toLocalDate());
 
-            proposalDto.setCreatedAt(proposal.getCreatedAt());
-            proposalDto.setUpdatedAt(proposal.getUpdatedAt());
-            proposalDto.setReferenceNumber(proposal.getReferenceNumber());
+            proposalDto.setEndDate(((java.sql.Date) row[0]).toLocalDate());
+            proposalDto.setCompanyId((Long) row[2]);
+            proposalDto.setContactId((Long) row[3]);
+            proposalDto.setUpdatedBy((Long) row[9]);
 
-            contacts.add(proposal.getContactId());
-            updatedByUsers.add(proposal.getUpdatedBy());
+            proposalDto.setCreatedAt(((java.sql.Timestamp) row[4]).toLocalDateTime());
+            proposalDto.setUpdatedAt(((java.sql.Timestamp) row[8]).toLocalDateTime());
+            proposalDto.setReferenceNumber((String) row[10]);
 
-            Set<ProposalDocumentDto> proposalDocumentDtos = proposal.getProposalDocuments().stream().map(document -> {
-                ProposalDocumentDto documentDto = new ProposalDocumentDto();
-                documentDto.setId(document.getId());
-                documentDto.setFolderName(document.getFolderName());
-                documentDto.setDocumentName(document.getDocumentName());
-                documentDto.setBlobUrl(document.getBlobUrl());
-                documentDto.setUpdatedBy(document.getUpdatedBy());
-                documentDto.setCreatedAt(document.getCreatedAt());
-                return documentDto;
-            }).collect(Collectors.toSet());
+            contacts.add((Long) row[3]);
+            updatedByUsers.add((Long) row[9]);
 
-            proposalDto.setProposalDocuments(proposalDocumentDtos);
+            Long proposalCount = ((Number) row[row.length - 1]).longValue(); // last element
+            proposalDto.setProposalCount(proposalCount);
 
-            return proposalDto;
+            dtoList.add(proposalDto);
+        }
+
+        // start fetch documents
+        Set<Long> proposalIds = dtoList.stream().map(ProposalDto::getId).collect(Collectors.toSet());
+        List<Proposal> proposalsWithDocs = proposalRepository.findAllWithDocumentsByIds(proposalIds);
+
+        Map<Long, Set<ProposalDocumentDto>> proposalDocsMap = proposalsWithDocs.stream()
+                .collect(Collectors.toMap(
+                        Proposal::getId,
+                        proposal -> proposal.getProposalDocuments().stream().map(document -> {
+                            ProposalDocumentDto docDto = new ProposalDocumentDto();
+                            docDto.setId(document.getId());
+                            docDto.setFolderName(document.getFolderName());
+                            docDto.setDocumentName(document.getDocumentName());
+                            docDto.setBlobUrl(document.getBlobUrl());
+                            docDto.setUpdatedBy(document.getUpdatedBy());
+                            docDto.setCreatedAt(document.getCreatedAt());
+                            return docDto;
+                        }).collect(Collectors.toSet())));
+
+        dtoList.forEach(dto -> {
+            dto.setProposalDocuments(proposalDocsMap.getOrDefault(dto.getId(), Collections.emptySet()));
         });
+        // end fetch documents
+
+        Page<ProposalDto> proposals = new PageImpl<>(dtoList, proposalPage.getPageable(),
+                proposalPage.getTotalElements());
 
         ContactAddressWrapper contactsData = getAdministrativeAreasData(contacts, headers);
         List<UserDto> updatedByUsersData = getUpdatedByData(updatedByUsers, headers);

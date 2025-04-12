@@ -2,6 +2,7 @@ package app.g_agent.proposal_service.dto;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -119,16 +120,18 @@ public class ProposalDto {
 		this.endDate = endDate;
 	}
 
-	public LocalDateTime getCreatedAt() {
-		return createdAt;
+	public String getCreatedAt() {
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+		return createdAt.format(formatter);
 	}
 
 	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
 	}
 
-	public LocalDateTime getUpdatedAt() {
-		return updatedAt;
+	public String getUpdatedAt() {
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+		return updatedAt.format(formatter);
 	}
 
 	public void setUpdatedAt(LocalDateTime updatedAt) {

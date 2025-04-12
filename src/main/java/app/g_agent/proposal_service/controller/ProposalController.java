@@ -43,7 +43,6 @@ public class ProposalController {
             return new ResponseEntity<ProposalSaveResponse>(proposalService.createProposal(request, proposalDto),
                     HttpStatus.CREATED);
         } catch (Exception ex) {
-            message.setName("Error");
             message.setMessage(ex.getMessage());
             return ResponseEntity.status(403).body(message);
         }
@@ -53,18 +52,11 @@ public class ProposalController {
     @PutMapping("/update")
     public ResponseEntity<?> updateProposal(HttpServletRequest request, @RequestBody ProposalDto proposalDto,
             @RequestParam Long id) {
-        Message message = new Message();
-
         try {
-            proposalService.updateProposal(request, proposalDto, id);
+            return proposalService.updateProposal(request, proposalDto, id);
         } catch (Exception ex) {
-            message.setName("Error");
-            message.setMessage(ex.getMessage());
-            return ResponseEntity.status(403).body(message);
+            return ResponseEntity.status(501).body("Error: " + ex.getMessage());
         }
-        message.setName("Success");
-        message.setMessage("Proposal updated successfully");
-        return ResponseEntity.ok(message);
     }
 
     @DeleteMapping("/delete")
@@ -74,11 +66,9 @@ public class ProposalController {
         try {
             proposalService.deleteProposal(request, id);
         } catch (Exception ex) {
-            message.setName("Error");
             message.setMessage(ex.getMessage());
             return ResponseEntity.status(403).body(message);
         }
-        message.setName("Success");
         message.setMessage("Proposal deleted successfully");
         return ResponseEntity.ok(message);
     }
@@ -90,9 +80,8 @@ public class ProposalController {
         try {
             return ResponseEntity.ok(proposalService.getProposal(request, id));
         } catch (Exception ex) {
-            message.setName("Error");
             message.setMessage(ex.getMessage());
-            return ResponseEntity.status(403).body(message);
+            return ResponseEntity.status(501).body(message);
         }
     }
 
@@ -107,7 +96,6 @@ public class ProposalController {
         try {
             return ResponseEntity.ok(proposalService.getProposals(request, headers, page, size));
         } catch (Exception ex) {
-            message.setName("Error");
             message.setMessage(ex.getMessage());
             return ResponseEntity.status(403).body(message);
         }
@@ -120,7 +108,6 @@ public class ProposalController {
         try {
             return ResponseEntity.ok(proposalService.getProposalByContact(request, id));
         } catch (Exception ex) {
-            message.setName("Error");
             message.setMessage(ex.getMessage());
             return ResponseEntity.status(403).body(message);
         }

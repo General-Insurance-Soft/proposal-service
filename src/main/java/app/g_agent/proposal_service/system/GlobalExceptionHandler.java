@@ -40,7 +40,7 @@ public class GlobalExceptionHandler {
 		String errorMessage = ex.getLocalizedMessage();
 		ErrorDetails errorDetails = new ErrorDetails(404, errorMessage, path);
 
-		return new ResponseEntity<>(errorMessage, HttpStatus.NOT_FOUND);
+		return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
 	}
 
 	@ExceptionHandler(DuplicateContactException.class)

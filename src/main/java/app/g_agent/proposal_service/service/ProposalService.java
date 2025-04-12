@@ -21,6 +21,7 @@ import org.springframework.util.MultiValueMap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import app.g_agent.proposal_service.commons.Message;
 import app.g_agent.proposal_service.dto.ContactAddressWrapper;
 import app.g_agent.proposal_service.dto.ContactDto;
 import app.g_agent.proposal_service.dto.LocalityDto;
@@ -171,11 +172,17 @@ public class ProposalService {
     }
 
     @Transactional
-    public void updateProposal(HttpServletRequest request, ProposalDto proposalDto, Long id) throws Exception {
-        Optional<Proposal> proposalOpt = proposalRepository.findById(id);
+    public ResponseEntity<?> updateProposal(HttpServletRequest request, ProposalDto proposalDto, Long id)
+            throws Exception {
+
+        Long orgId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "organization-id").toString());
+        Optional<Proposal> proposalOpt = proposalRepository.findByIdAndCompanyId(id, orgId);
 
         if (proposalOpt.isEmpty()) {
-            throw new Exception("The proposal cannot be found");
+            // throw new Exception("The proposal cannot be found");
+            Message message = new Message();
+            message.setMessage("The proposal cannot be found");
+            return ResponseEntity.status(501).body(message);
         }
 
         Proposal proposal = proposalOpt.get();
@@ -186,17 +193,20 @@ public class ProposalService {
         proposal.setPolicyTypeId(proposalDto.getPolicyTypeId());
         proposal.setStartDate(proposalDto.getStartDate());
         proposal.setEndDate(proposalDto.getEndDate());
-        proposal.setCompanyId(proposalDto.getCompanyId());
-        proposal.setContactId(proposalDto.getContactId());
         proposal.setUpdatedBy(Long.valueOf(userId));
         proposal.setReferenceNumber(proposalDto.getReferenceNumber());
 
         try {
             proposalRepository.save(proposal);
+            Message message = new Message();
+            message.setMessage("Proposal updated successfully");
+            return ResponseEntity.status(200).body(message);
         } catch (DataIntegrityViolationException ex) {
             if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
                 logger.info("Proposal error ==========> id: " + ex.getMessage());
-                throw new Exception("This proposal already exists.");
+                Message message = new Message();
+                message.setMessage("This proposal already exists.");
+                return ResponseEntity.status(409).body(message);
             }
             throw ex; // Rethrow if not related to constraint violation
         }

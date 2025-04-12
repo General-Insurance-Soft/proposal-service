@@ -50,6 +50,9 @@ public class ProposalDto {
 	@JsonProperty("contact_id")
 	private Long contactId;
 
+	@JsonProperty("proposal_count")
+	private Long proposalCount;
+
 	@JsonProperty("proposal_documents")
 	private Set<ProposalDocumentDto> proposalDocuments;
 
@@ -74,6 +77,14 @@ public class ProposalDto {
 
 	public void setId(Long id) {
 		this.id = id;
+	}
+
+	public Long getProposalCount() {
+		return proposalCount;
+	}
+
+	public void setProposalCount(Long proposalCount) {
+		this.proposalCount = proposalCount;
 	}
 
 	public Long getInsuranceCompanyId() {

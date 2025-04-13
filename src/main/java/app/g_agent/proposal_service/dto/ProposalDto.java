@@ -14,6 +14,7 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.OneToMany;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 public class ProposalDto {
@@ -59,7 +60,6 @@ public class ProposalDto {
 
 	@JsonProperty("reference_number")
 	@NotBlank(message = "reference_number is required")
-	@NotNull(message = "reference_number is required")
 	private String referenceNumber;
 
 	public void setReferenceNumber(String referenceNumber) {

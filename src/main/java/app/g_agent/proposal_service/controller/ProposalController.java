@@ -50,7 +50,7 @@ public class ProposalController {
     }
 
     @PutMapping("/update")
-    public ResponseEntity<?> updateProposal(HttpServletRequest request, @RequestBody ProposalDto proposalDto,
+    public ResponseEntity<?> updateProposal(HttpServletRequest request,@Valid @RequestBody ProposalDto proposalDto,
             @RequestParam Long id) {
         try {
             return proposalService.updateProposal(request, proposalDto, id);

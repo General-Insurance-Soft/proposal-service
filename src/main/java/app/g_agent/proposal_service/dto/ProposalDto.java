@@ -13,6 +13,7 @@ import app.g_agent.proposal_service.model.ProposalDocument;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.OneToMany;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -61,6 +62,14 @@ public class ProposalDto {
 	@JsonProperty("reference_number")
 	@NotBlank(message = "reference_number is required")
 	private String referenceNumber;
+
+	@AssertTrue(message = "start_date must be before end_date")
+	public boolean isStartDateBeforeEndDate() {
+		if (startDate == null || endDate == null) {
+			return true; // Let @NotNull handle null checks if needed
+		}
+		return startDate.isBefore(endDate);
+	}
 
 	public void setReferenceNumber(String referenceNumber) {
 		this.referenceNumber = referenceNumber;

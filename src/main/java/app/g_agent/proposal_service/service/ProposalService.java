@@ -417,6 +417,10 @@ public class ProposalService {
                     proposalSearchResultDto.setreferenceNumber(proposal.getReferenceNumber());
                     proposalSearchResultDto.setContactName("");
                     proposalSearchResultDto.setContactIdNumber("");
+                    proposalSearchResultDto.setInsuranceCompanyId(proposal.getInsuranceCompanyId());
+                    proposalSearchResultDto.setPolicyTypeId(proposal.getPolicyTypeId());
+                    proposalSearchResultDto.setContactId(proposal.getContactId());
+                    
                     return proposalSearchResultDto;
                 }).collect(Collectors.toList());
     }

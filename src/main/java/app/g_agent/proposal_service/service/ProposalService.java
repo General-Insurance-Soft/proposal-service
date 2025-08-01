@@ -404,25 +404,70 @@ public class ProposalService {
 
     }
 
-    public List<ProposalSearchResultDto> searchProposals(HttpServletRequest request, String keyword) throws Exception {
+    public List<ProposalSearchResultDto> searchProposals(HttpServletRequest request,
+            MultiValueMap<String, String> headers, String keyword) throws Exception {
 
         int orgId = (int) jwtService.getTokenValue(jwtService.getJWT(request), "organization-id");
         logger.info("The org id ==============> " + orgId);
         List<Proposal> proposals = proposalRepository.findAll(ProposalSpecification.matchesKeyword(keyword, orgId));
 
-        return proposals.stream().map(
-                proposal -> {
-                    ProposalSearchResultDto proposalSearchResultDto = new ProposalSearchResultDto();
-                    proposalSearchResultDto.setId(proposal.getId());
-                    proposalSearchResultDto.setreferenceNumber(proposal.getReferenceNumber());
-                    proposalSearchResultDto.setContactName("");
-                    proposalSearchResultDto.setContactIdNumber("");
-                    proposalSearchResultDto.setInsuranceCompanyId(proposal.getInsuranceCompanyId());
-                    proposalSearchResultDto.setPolicyTypeId(proposal.getPolicyTypeId());
-                    proposalSearchResultDto.setContactId(proposal.getContactId());
-                    
-                    return proposalSearchResultDto;
-                }).collect(Collectors.toList());
+        if (proposals.size() != 0) {
+            return proposals.stream().map(
+                    proposal -> {
+                        ProposalSearchResultDto proposalSearchResultDto = new ProposalSearchResultDto();
+                        proposalSearchResultDto.setId(proposal.getId());
+                        proposalSearchResultDto.setreferenceNumber(proposal.getReferenceNumber());
+                        proposalSearchResultDto.setContactName("");
+                        proposalSearchResultDto.setContactIdNumber("");
+                        proposalSearchResultDto.setInsuranceCompanyId(proposal.getInsuranceCompanyId());
+                        proposalSearchResultDto.setPolicyTypeId(proposal.getPolicyTypeId());
+                        proposalSearchResultDto.setContactId(proposal.getContactId());
+
+                        return proposalSearchResultDto;
+                    }).collect(Collectors.toList());
+        } else {
+            headers.add("Content-Type", "application/json");
+
+            Map<String, String> flattenedHeaders = new HashMap<>();
+            headers.forEach((key, values) -> {
+                flattenedHeaders.put(key, String.join(",", values));
+            });
+
+            try {
+
+                List<ContactDto> results = contactsDataClient.getContactsByKeyword(keyword, flattenedHeaders);
+
+                List<Long> contactIds = results.stream()
+                        .map(ContactDto::getId)
+                        .collect(Collectors.toList());
+                logger.info("Got contactIds of size ==============> " + contactIds.size());
+                // find proposal by contact ids
+                List<ProposalSearchResultDto> proposalResults = proposalRepository
+                        .findByContactIdInAndCompanyId(contactIds, orgId)
+                        .stream()
+                        .map(proposal -> {
+                            ProposalSearchResultDto proposalSearchResultDto = new ProposalSearchResultDto();
+                            proposalSearchResultDto.setId(proposal.getId());
+                            proposalSearchResultDto.setreferenceNumber(proposal.getReferenceNumber());
+                            proposalSearchResultDto.setContactName("");
+                            proposalSearchResultDto.setContactIdNumber("");
+                            proposalSearchResultDto.setInsuranceCompanyId(proposal.getInsuranceCompanyId());
+                            proposalSearchResultDto.setPolicyTypeId(proposal.getPolicyTypeId());
+                            proposalSearchResultDto.setContactId(proposal.getContactId());
+
+                            return proposalSearchResultDto;
+                        }).collect(Collectors.toList());
+
+                return proposalResults;
+
+            } catch (Exception e) {
+                logger.error("Error occurred while fetching users: {}",
+                        e.getMessage());
+                List<ProposalSearchResultDto> results = new ArrayList<>();
+                return results;
+            }
+        }
+
     }
 
 }

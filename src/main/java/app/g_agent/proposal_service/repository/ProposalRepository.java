@@ -25,6 +25,7 @@ public interface ProposalRepository extends JpaRepository<Proposal, Long>, JpaSp
 
     @Query("SELECT DISTINCT p FROM Proposal p LEFT JOIN FETCH p.proposalDocuments WHERE p.id IN :ids")
     List<Proposal> findAllWithDocumentsByIds(@Param("ids") Set<Long> ids);
+
     @Query(value = """
             SELECT * FROM (
                 SELECT p.*
@@ -52,5 +53,9 @@ public interface ProposalRepository extends JpaRepository<Proposal, Long>, JpaSp
             ) AS count_table
             """, nativeQuery = true)
     Page<Object[]> findLatestProposalsPerContact(Pageable pageable, @Param("companyId") Long companyId);
+
+    @Query("SELECT p FROM Proposal p WHERE p.contactId IN :contactIds AND p.companyId = :companyId")
+    List<Proposal> findByContactIdInAndCompanyId(@Param("contactIds") List<Long> contactIds,
+            @Param("companyId") int companyId);
 
 }

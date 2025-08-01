@@ -13,11 +13,17 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import app.g_agent.proposal_service.dto.ContactAddressWrapper;
+import app.g_agent.proposal_service.dto.ContactDto;
+import app.g_agent.proposal_service.dto.UserDto;
 
 @FeignClient(name = "contact-service")
 public interface ContactsDataClient {
 
     @GetMapping("/contact-service/api/v1/contact/get-contacts-by-ids")
     ContactAddressWrapper getContactsByIds(@RequestParam String contactIds,
+            @RequestHeader Map<String, String> headers);
+
+    @PostMapping("/contact-service/api/v1/contact/search")
+    List<ContactDto> getContactsByKeyword(@RequestParam String keyword,
             @RequestHeader Map<String, String> headers);
 }

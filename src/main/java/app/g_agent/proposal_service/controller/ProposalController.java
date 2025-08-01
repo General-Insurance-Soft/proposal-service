@@ -55,7 +55,7 @@ public class ProposalController {
     }
 
     @PutMapping("/update")
-    public ResponseEntity<?> updateProposal(HttpServletRequest request,@Valid @RequestBody ProposalDto proposalDto,
+    public ResponseEntity<?> updateProposal(HttpServletRequest request, @Valid @RequestBody ProposalDto proposalDto,
             @RequestParam Long id) {
         try {
             return proposalService.updateProposal(request, proposalDto, id);
@@ -119,15 +119,16 @@ public class ProposalController {
     }
 
     @PostMapping("/search")
-	public ResponseEntity<List<ProposalSearchResultDto>> searchProposal(HttpServletRequest request,
-			@RequestParam(required = false) String keyword) {
-		List<ProposalSearchResultDto> results=new ArrayList<>();
-		try {
-			results = proposalService.searchProposals(request, keyword);
-		} catch (Exception e) {
-			logger.info("Error searching proposals " + e.getMessage());
-		}
-		return ResponseEntity.ok(results);
-	}
+    public ResponseEntity<List<ProposalSearchResultDto>> searchProposal(HttpServletRequest request,
+            @RequestHeader MultiValueMap<String, String> headers,
+            @RequestParam(required = false) String keyword) {
+        List<ProposalSearchResultDto> results = new ArrayList<>();
+        try {
+            results = proposalService.searchProposals(request, headers, keyword);
+        } catch (Exception e) {
+            logger.info("Error searching proposals " + e.getMessage());
+        }
+        return ResponseEntity.ok(results);
+    }
 
 }

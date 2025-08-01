@@ -35,6 +35,7 @@ import app.g_agent.proposal_service.repository.ProposalRepository;
 import app.g_agent.proposal_service.system.exception.DuplicateContactException;
 import jakarta.servlet.http.HttpServletRequest;
 import app.g_agent.proposal_service.dto.ProposalSaveResponse;
+import app.g_agent.proposal_service.dto.ProposalSearchResultDto;
 import app.g_agent.proposal_service.dto.UserDto;
 
 import org.springframework.data.domain.Pageable;
@@ -44,6 +45,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+
+//ProposalSpecification
+import app.g_agent.proposal_service.repository.ProposalSpecification;
 
 @Service
 public class ProposalService {
@@ -398,6 +402,23 @@ public class ProposalService {
 
         return proposals;
 
+    }
+
+    public List<ProposalSearchResultDto> searchProposals(HttpServletRequest request, String keyword) throws Exception {
+
+        int orgId = (int) jwtService.getTokenValue(jwtService.getJWT(request), "organization-id");
+        logger.info("The org id ==============> " + orgId);
+        List<Proposal> proposals = proposalRepository.findAll(ProposalSpecification.matchesKeyword(keyword, orgId));
+
+        return proposals.stream().map(
+                proposal -> {
+                    ProposalSearchResultDto proposalSearchResultDto = new ProposalSearchResultDto();
+                    proposalSearchResultDto.setId(proposal.getId());
+                    proposalSearchResultDto.setreferenceNumber(proposal.getReferenceNumber());
+                    proposalSearchResultDto.setContactName("");
+                    proposalSearchResultDto.setContactIdNumber("");
+                    return proposalSearchResultDto;
+                }).collect(Collectors.toList());
     }
 
 }

@@ -1,5 +1,8 @@
 package app.g_agent.proposal_service.controller;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +21,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import app.g_agent.proposal_service.commons.Message;
+import app.g_agent.proposal_service.dto.ContactDto;
 import app.g_agent.proposal_service.dto.ProposalDto;
 import app.g_agent.proposal_service.dto.ProposalSaveResponse;
+import app.g_agent.proposal_service.dto.ProposalSearchResultDto;
 import app.g_agent.proposal_service.service.ProposalService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -112,4 +117,17 @@ public class ProposalController {
             return ResponseEntity.status(403).body(message);
         }
     }
+
+    @PostMapping("/search")
+	public ResponseEntity<List<ProposalSearchResultDto>> searchProposal(HttpServletRequest request,
+			@RequestParam(required = false) String keyword) {
+		List<ProposalSearchResultDto> results=new ArrayList<>();
+		try {
+			results = proposalService.searchProposals(request, keyword);
+		} catch (Exception e) {
+			logger.info("Error searching proposals " + e.getMessage());
+		}
+		return ResponseEntity.ok(results);
+	}
+
 }

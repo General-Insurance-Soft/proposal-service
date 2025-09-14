@@ -38,11 +38,11 @@ public class ProposalDocumentController {
         try {
             proposalDocumentService.createProposalDocument(request, proposalDocumentDto);
         } catch (Exception ex) {
-            message.setName("Error");
+            message.setMessage("Error");
             message.setMessage(ex.getMessage());
             return ResponseEntity.status(403).body(message);
         }
-        message.setName("Success");
+        message.setMessage("Success");
         message.setMessage("Proposal document created successfully");
         return ResponseEntity.ok(message);
     }
@@ -56,11 +56,11 @@ public class ProposalDocumentController {
         try {
             proposalDocumentService.updateProposalDocument(request, proposalDocumentDto, id);
         } catch (Exception ex) {
-            message.setName("Error");
+            message.setMessage("Error");
             message.setMessage(ex.getMessage());
             return ResponseEntity.status(403).body(message);
         }
-        message.setName("Success");
+        message.setMessage("Success");
         message.setMessage("Proposal document updated successfully");
         return ResponseEntity.ok(message);
     }
@@ -72,11 +72,11 @@ public class ProposalDocumentController {
         try {
             proposalDocumentService.deleteProposalDocument(request, id);
         } catch (Exception ex) {
-            message.setName("Error");
+            message.setMessage("Error");
             message.setMessage(ex.getMessage());
             return ResponseEntity.status(403).body(message);
         }
-        message.setName("Success");
+        message.setMessage("Success");
         message.setMessage("Proposal document deleted successfully");
         return ResponseEntity.ok(message);
     }
@@ -88,7 +88,7 @@ public class ProposalDocumentController {
         try {
             return ResponseEntity.ok(proposalDocumentService.getProposalDocument(request, id));
         } catch (Exception ex) {
-            message.setName("Error");
+            message.setMessage("Error");
             message.setMessage(ex.getMessage());
             return ResponseEntity.status(403).body(message);
         }
@@ -101,7 +101,7 @@ public class ProposalDocumentController {
         try {
             return ResponseEntity.ok(proposalDocumentService.getProposalDocuments(request));
         } catch (Exception ex) {
-            message.setName("Error");
+            message.setMessage("Error");
             message.setMessage(ex.getMessage());
             return ResponseEntity.status(403).body(message);
         }

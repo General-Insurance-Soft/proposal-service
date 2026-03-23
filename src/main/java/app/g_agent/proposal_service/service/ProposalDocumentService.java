@@ -38,6 +38,7 @@ public class ProposalDocumentService {
         proposalDocument.setDocumentName(proposalDocumentDto.getDocumentName());
         proposalDocument.setBlobUrl(proposalDocumentDto.getBlobUrl());
         proposalDocument.setUpdatedBy(Long.valueOf(userId));
+        proposalDocument.setDocumentType(proposalDocumentDto.getDocumentType());
 
         try {
             proposalDocumentRepository.save(proposalDocument);
@@ -66,6 +67,7 @@ public class ProposalDocumentService {
         proposalDocument.setDocumentName(proposalDocumentDto.getDocumentName());
         proposalDocument.setBlobUrl(proposalDocumentDto.getBlobUrl());
         proposalDocument.setUpdatedBy(Long.valueOf(userId));
+        proposalDocument.setDocumentType(proposalDocumentDto.getDocumentType());
 
         try {
             proposalDocumentRepository.save(proposalDocument);
@@ -99,6 +101,7 @@ public class ProposalDocumentService {
             proposalDocumentDto.setFolderName(proposalDocumentOpt.get().getFolderName());
             proposalDocumentDto.setDocumentName(proposalDocumentOpt.get().getDocumentName());
             proposalDocumentDto.setBlobUrl(proposalDocumentOpt.get().getBlobUrl());
+            proposalDocumentDto.setDocumentType(proposalDocumentOpt.get().getDocumentType());
             proposalDocumentDto.setUpdatedBy(proposalDocumentOpt.get().getUpdatedBy());
             proposalDocumentDto.setCreatedAt(proposalDocumentOpt.get().getCreatedAt());
 
@@ -118,6 +121,7 @@ public class ProposalDocumentService {
             proposalDocumentDto.setFolderName(proposalDocument.getFolderName());
             proposalDocumentDto.setDocumentName(proposalDocument.getDocumentName());
             proposalDocumentDto.setBlobUrl(proposalDocument.getBlobUrl());
+            proposalDocumentDto.setDocumentType(proposalDocument.getDocumentType());
             proposalDocumentDto.setUpdatedBy(proposalDocument.getUpdatedBy());
             proposalDocumentDto.setCreatedAt(proposalDocument.getCreatedAt());
             return proposalDocumentDto;

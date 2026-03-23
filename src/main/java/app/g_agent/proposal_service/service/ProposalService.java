@@ -116,6 +116,7 @@ public class ProposalService {
                 documentDto.setFolderName(document.getFolderName());
                 documentDto.setDocumentName(document.getDocumentName());
                 documentDto.setBlobUrl(document.getBlobUrl());
+                documentDto.setDocumentType(document.getDocumentType());
                 documentDto.setUpdatedBy(document.getUpdatedBy());
                 documentDto.setCreatedAt(document.getCreatedAt());
                 return documentDto;
@@ -152,6 +153,7 @@ public class ProposalService {
                 document.setFolderName(documentDto.getFolderName());
                 document.setDocumentName(documentDto.getDocumentName());
                 document.setBlobUrl(documentDto.getBlobUrl());
+                document.setDocumentType(documentDto.getDocumentType());
                 document.setUpdatedBy(Long.valueOf(userId));
                 document.setProposal(proposal); // Set the proposal reference
                 proposalDocuments.add(document);
@@ -268,6 +270,7 @@ public class ProposalService {
                             docDto.setFolderName(document.getFolderName());
                             docDto.setDocumentName(document.getDocumentName());
                             docDto.setBlobUrl(document.getBlobUrl());
+                            docDto.setDocumentType(document.getDocumentType());
                             docDto.setUpdatedBy(document.getUpdatedBy());
                             docDto.setCreatedAt(document.getCreatedAt());
                             return docDto;
@@ -390,6 +393,7 @@ public class ProposalService {
                 documentDto.setFolderName(document.getFolderName());
                 documentDto.setDocumentName(document.getDocumentName());
                 documentDto.setBlobUrl(document.getBlobUrl());
+                documentDto.setDocumentType(document.getDocumentType());
                 documentDto.setUpdatedBy(document.getUpdatedBy());
                 documentDto.setCreatedAt(document.getCreatedAt());
                 return documentDto;

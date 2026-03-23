@@ -18,6 +18,9 @@ public class ProposalDocumentDto {
     @JsonProperty("document_name")
     private String documentName;
 
+    @JsonProperty("document_type")
+    private Long documentType;
+
     @NotBlank(message = "Blob URL is required")
     @JsonProperty("blob_url")
     private String blobUrl;
@@ -71,6 +74,14 @@ public class ProposalDocumentDto {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Long getDocumentType() {
+        return documentType;
+    }
+
+    public void setDocumentType(Long documentType) {
+        this.documentType = documentType;
     }
 
     public Long getUpdatedBy() {

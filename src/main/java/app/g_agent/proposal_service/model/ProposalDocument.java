@@ -35,6 +35,9 @@ public class ProposalDocument {
     @Column(name = "blob_url", nullable = false)
     private String blobUrl;
 
+    @Column(name = "document_type", nullable = false)
+    private Long documentType;
+
     @CreatedDate
     @Column(updatable = false, name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -70,6 +73,14 @@ public class ProposalDocument {
 
     public String getDocumentName() {
         return documentName;
+    }
+
+    public Long getDocumentType() {
+        return documentType;
+    }
+
+    public void setDocumentType(Long documentType) {
+        this.documentType = documentType;
     }
 
     public void setDocumentName(String documentName) {

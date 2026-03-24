@@ -147,8 +147,11 @@ public class ProposalService {
         proposal.setReferenceNumber(proposalDto.getReferenceNumber());
 
         if (proposalDto.getProposalDocuments() != null) {
+            logger.info("proposalDto.getProposalDocuments() not null");
             Set<ProposalDocument> proposalDocuments = new HashSet<>();
             proposalDto.getProposalDocuments().forEach(documentDto -> {
+                logger.debug("Document name: " + documentDto.getDocumentName());
+                logger.debug("blob url: " + documentDto.getBlobUrl());
                 ProposalDocument document = new ProposalDocument();
                 document.setFolderName(documentDto.getFolderName());
                 document.setDocumentName(documentDto.getDocumentName());

@@ -26,8 +26,8 @@ public class ProposalDocument {
     @JoinColumn(name = "proposal_id", nullable = false)
     private Proposal proposal;
 
-    @Column(name = "folder_name", nullable = false)
-    private String folderName;
+    @Column(name = "folder_name")
+    private String folderName="default";
 
     @Column(name = "document_name", nullable = false)
     private String documentName;

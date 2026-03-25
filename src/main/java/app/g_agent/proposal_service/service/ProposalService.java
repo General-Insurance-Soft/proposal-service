@@ -1,5 +1,6 @@
 package app.g_agent.proposal_service.service;
 
+import java.net.URI;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,15 +11,20 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -34,6 +40,9 @@ import app.g_agent.proposal_service.repository.ProposalDocumentRepository;
 import app.g_agent.proposal_service.repository.ProposalRepository;
 import app.g_agent.proposal_service.system.exception.DuplicateContactException;
 import jakarta.servlet.http.HttpServletRequest;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import app.g_agent.proposal_service.dto.ProposalSaveResponse;
 import app.g_agent.proposal_service.dto.ProposalSearchResultDto;
 import app.g_agent.proposal_service.dto.UserDto;
@@ -41,8 +50,14 @@ import app.g_agent.proposal_service.dto.UserDto;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -61,6 +76,11 @@ public class ProposalService {
     private ProposalRepository proposalRepository;
     private ProposalDocumentRepository proposalDocumentRepository;
     private JwtService jwtService;
+
+    @Value("${backblaze.s3.endpoint-url}")
+    private String ENDPOINT_URL;
+    @Value("${backblaze.s3.bucket-name}")
+    private String bucketName;
 
     public ProposalService(ProposalRepository proposalRepository, ProposalDocumentRepository proposalDocumentRepository,
             JwtService jwtService) {
@@ -131,7 +151,8 @@ public class ProposalService {
     }
 
     @Transactional
-    public ProposalSaveResponse createProposal(HttpServletRequest request, ProposalDto proposalDto) throws Exception {
+    public ProposalSaveResponse createProposal(HttpServletRequest request, ProposalDto proposalDto,
+            List<MultipartFile> files) throws Exception {
         Proposal proposal = new Proposal();
 
         Long userId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "user-id").toString());
@@ -145,6 +166,10 @@ public class ProposalService {
         proposal.setContactId(proposalDto.getContactId());
         proposal.setUpdatedBy(Long.valueOf(userId));
         proposal.setReferenceNumber(proposalDto.getReferenceNumber());
+
+        List<Map<String, String>> proposalDocs = this.uploadFilesToS3(files, orgId);
+        Set<ProposalDocumentDto> proposalDocumentDtos = this.prepareProposalDocuments(proposalDocs, proposal, userId);
+        proposalDto.setProposalDocuments(proposalDocumentDtos);
 
         if (proposalDto.getProposalDocuments() != null) {
             logger.info("proposalDto.getProposalDocuments() not null");
@@ -188,6 +213,125 @@ public class ProposalService {
             }
             throw ex; // Rethrow if not related to constraint violation
         }
+    }
+
+    private Set<ProposalDocumentDto> prepareProposalDocuments(List<Map<String, String>> proposalDocs, Proposal proposal,
+            Long userId) {
+        Set<ProposalDocumentDto> proposalDocuments = new HashSet<>();
+
+        for (Map<String, String> fileMeta : (List<Map<String, String>>) proposalDocs) {
+            ProposalDocumentDto doc = new ProposalDocumentDto();
+            doc.setDocumentName(fileMeta.get("name"));
+            logger.debug("Blob URL ======>: " + fileMeta.get("blob_url"));
+            doc.setBlobUrl((String) fileMeta.get("blob_url"));
+            doc.setDocumentType(Long.valueOf(fileMeta.get("type").hashCode())); // Example mapping,
+            proposalDocuments.add(doc);
+        }
+        logger.debug("Alter proposal documents DTO ======>: " + proposalDocuments.toString());
+        return proposalDocuments;
+    }
+
+    private List<Map<String, String>> uploadFilesToS3(List<MultipartFile> filesList, Long orgId) {
+
+        if (orgId == null) {
+            logger.warn("Organization ID is null for uploading proposal and user files.");
+            return new ArrayList<>();
+        }
+
+        Matcher matcher = Pattern.compile("https://s3\\.([a-z0-9-]+)\\.backblazeb2\\.com")
+                .matcher(ENDPOINT_URL.trim());
+        String region = matcher.find() ? matcher.group(1) : null;
+        if (region == null) {
+            logger.error("Can't find a region in the endpoint URL: " + ENDPOINT_URL);
+            return new ArrayList<>();
+        }
+
+        List<Map<String, String>> filesMetaList = new ArrayList<>();
+        try {
+            S3Client b2 = S3Client.builder()
+                    .region(Region.of(region))
+                    .credentialsProvider(ProfileCredentialsProvider.create("gisca"))
+                    .endpointOverride(new URI(ENDPOINT_URL))
+                    .build();
+
+            for (MultipartFile file : filesList) {
+
+                String contentType = file.getContentType() != null
+                        ? file.getContentType()
+                        : "";
+
+                // Accept files with no content type, but reject empty "blob" files
+                if (("blob".equalsIgnoreCase(file.getOriginalFilename())
+                        || file.getOriginalFilename().isEmpty())
+                        && file.getSize() == 0) {
+                    logger.info("Skipping empty blob file upload.");
+                    continue;
+                }
+
+                if (!contentType.isEmpty()
+                        && !contentType.matches("image/.*|application/pdf")) {
+                    throw new IllegalArgumentException(
+                            "Invalid file type: " + file.getOriginalFilename());
+                }
+
+                byte[] bytes = file.getBytes();
+
+                String key;
+
+                String input = file.getOriginalFilename();
+                String result = input
+                        .replaceAll("name:", "")
+                        .replaceAll("-type:[^-]+", "");
+
+                key = orgId + "/proposal-service/" + result;
+
+                PutObjectRequest objRequest = PutObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(key)
+                        .contentType(contentType)
+                        .build();
+
+                b2.putObject(
+                        objRequest,
+                        software.amazon.awssdk.core.sync.RequestBody.fromBytes(bytes));
+
+                String fileUrl = String.format(
+                        "%s/%s/%s",
+                        ENDPOINT_URL,
+                        bucketName,
+                        key);
+
+                logger.debug("process proposal files ======>: ");
+                Map<String, String> filesMeta = new HashMap<>();
+
+                Pattern fileNamePattern = Pattern.compile("name:([^\\-]+)");
+                Pattern fileTypePattern = Pattern.compile("-type:([^\\-]+)");
+
+                Matcher fileName = fileNamePattern.matcher(input);
+                Matcher typeVal = fileTypePattern.matcher(input);
+
+                logger.debug("process regex and create metadata ======>: ");
+                if (fileName.find() && typeVal.find()) {
+                    String name = fileName.group(1);
+                    String typeNumber = typeVal.group(1);
+                    filesMeta.put("name", name);
+                    filesMeta.put("type", typeNumber);
+                }
+
+                filesMeta.put("blob_url", fileUrl);
+
+                logger.debug("Add objects to map for processing ======>: ");
+
+                filesMetaList.add(filesMeta);
+
+                logger.debug("objects added to map for processing ======>: ");
+
+            }
+        } catch (Exception e) {
+            logger.error("Error uploading file to S3: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+        return filesMetaList;
     }
 
     @Transactional

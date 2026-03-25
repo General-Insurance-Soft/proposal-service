@@ -152,6 +152,15 @@ public class ProposalService {
             proposalDto.getProposalDocuments().forEach(documentDto -> {
                 logger.debug("Document name: " + documentDto.getDocumentName());
                 logger.debug("blob url: " + documentDto.getBlobUrl());
+
+                // Skip empty documents
+                if (documentDto.getBlobUrl() == null ||
+                        documentDto.getDocumentName() == null ||
+                        documentDto.getDocumentType() == null) {
+                    logger.debug("Skipping empty document DTO");
+                    return;
+                }
+
                 ProposalDocument document = new ProposalDocument();
                 document.setFolderName(documentDto.getFolderName());
                 document.setDocumentName(documentDto.getDocumentName());
@@ -205,6 +214,34 @@ public class ProposalService {
         proposal.setEndDate(proposalDto.getEndDate());
         proposal.setUpdatedBy(Long.valueOf(userId));
         proposal.setReferenceNumber(proposalDto.getReferenceNumber());
+
+        if (proposalDto.getProposalDocuments() != null) {
+            logger.info("proposalDto.getProposalDocuments() not null");
+            Set<ProposalDocument> proposalDocuments = new HashSet<>();
+            proposalDto.getProposalDocuments().forEach(documentDto -> {
+                logger.debug("Document name: " + documentDto.getDocumentName());
+                logger.debug("blob url: " + documentDto.getBlobUrl());
+
+                // Skip empty documents
+                if (documentDto.getBlobUrl() == null ||
+                        documentDto.getDocumentName() == null ||
+                        documentDto.getDocumentType() == null) {
+                    logger.debug("Skipping empty document DTO");
+                    return;
+                }
+
+                ProposalDocument document = new ProposalDocument();
+                document.setFolderName(documentDto.getFolderName());
+                document.setDocumentName(documentDto.getDocumentName());
+                document.setBlobUrl(documentDto.getBlobUrl());
+                document.setDocumentType(documentDto.getDocumentType());
+                document.setUpdatedBy(Long.valueOf(userId));
+                document.setProposal(proposal); // Set the proposal reference
+                proposalDocuments.add(document);
+            });
+            proposal.getProposalDocuments().clear();
+            proposal.getProposalDocuments().addAll(proposalDocuments);
+        }
 
         try {
             proposalRepository.save(proposal);

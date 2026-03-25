@@ -60,6 +60,21 @@ public class ProposalController {
 
     }
 
+    @PostMapping("/create-without-files")
+    public ResponseEntity<?> createProposal(HttpServletRequest request, @Valid @RequestBody ProposalDto proposalDto) {
+        Message message = new Message();
+
+        try {
+
+            return new ResponseEntity<ProposalSaveResponse>(proposalService.createProposalWithFileMeta(request, proposalDto),
+                    HttpStatus.CREATED);
+        } catch (Exception ex) {
+            message.setMessage(ex.getMessage());
+            return ResponseEntity.status(403).body(message);
+        }
+
+    }
+
     @PutMapping("/update")
     public ResponseEntity<?> updateProposal(HttpServletRequest request, @Valid @RequestBody ProposalDto proposalDto,
             @RequestParam Long id) {

@@ -151,50 +151,15 @@ public class ProposalService {
     }
 
     @Transactional
-    public ProposalSaveResponse createProposal(HttpServletRequest request, ProposalDto proposalDto,
-            List<MultipartFile> files) throws Exception {
-        Proposal proposal = new Proposal();
+    public ProposalSaveResponse createProposalWithFileMeta(HttpServletRequest request, ProposalDto proposalDto)
+            throws Exception {
+        Proposal proposal = this.prepareProposal(request, proposalDto);
 
         Long userId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "user-id").toString());
-        Long orgId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "organization-id").toString());
-        logger.info("user ID: ==============================>" + userId);
-        proposal.setInsuranceCompanyId(proposalDto.getInsuranceCompanyId());
-        proposal.setPolicyTypeId(proposalDto.getPolicyTypeId());
-        proposal.setStartDate(proposalDto.getStartDate());
-        proposal.setEndDate(proposalDto.getEndDate());
-        proposal.setCompanyId(orgId);
-        proposal.setContactId(proposalDto.getContactId());
-        proposal.setUpdatedBy(Long.valueOf(userId));
-        proposal.setReferenceNumber(proposalDto.getReferenceNumber());
-
-        List<Map<String, String>> proposalDocs = this.uploadFilesToS3(files, orgId);
-        Set<ProposalDocumentDto> proposalDocumentDtos = this.prepareProposalDocuments(proposalDocs, proposal, userId);
-        proposalDto.setProposalDocuments(proposalDocumentDtos);
 
         if (proposalDto.getProposalDocuments() != null) {
             logger.info("proposalDto.getProposalDocuments() not null");
-            Set<ProposalDocument> proposalDocuments = new HashSet<>();
-            proposalDto.getProposalDocuments().forEach(documentDto -> {
-                logger.debug("Document name: " + documentDto.getDocumentName());
-                logger.debug("blob url: " + documentDto.getBlobUrl());
-
-                // Skip empty documents
-                if (documentDto.getBlobUrl() == null ||
-                        documentDto.getDocumentName() == null ||
-                        documentDto.getDocumentType() == null) {
-                    logger.debug("Skipping empty document DTO");
-                    return;
-                }
-
-                ProposalDocument document = new ProposalDocument();
-                document.setFolderName(documentDto.getFolderName());
-                document.setDocumentName(documentDto.getDocumentName());
-                document.setBlobUrl(documentDto.getBlobUrl());
-                document.setDocumentType(documentDto.getDocumentType());
-                document.setUpdatedBy(Long.valueOf(userId));
-                document.setProposal(proposal); // Set the proposal reference
-                proposalDocuments.add(document);
-            });
+            Set<ProposalDocument> proposalDocuments = this.prepareProposalDocumentObject(proposalDto, proposal, userId);
             proposal.setProposalDocuments(proposalDocuments);
         }
 
@@ -213,6 +178,85 @@ public class ProposalService {
             }
             throw ex; // Rethrow if not related to constraint violation
         }
+    }
+
+    @Transactional
+    public ProposalSaveResponse createProposal(HttpServletRequest request, ProposalDto proposalDto,
+            List<MultipartFile> files) throws Exception {
+        Proposal proposal = this.prepareProposal(request, proposalDto);
+
+        Long userId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "user-id").toString());
+        Long orgId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "organization-id").toString());
+
+        List<Map<String, String>> proposalDocs = this.uploadFilesToS3(files, orgId);
+        Set<ProposalDocumentDto> proposalDocumentDtos = this.prepareProposalDocuments(proposalDocs, proposal, userId);
+        proposalDto.setProposalDocuments(proposalDocumentDtos);
+
+        if (proposalDto.getProposalDocuments() != null) {
+            logger.info("proposalDto.getProposalDocuments() not null");
+            Set<ProposalDocument> proposalDocuments = this.prepareProposalDocumentObject(proposalDto, proposal, userId);
+            proposal.setProposalDocuments(proposalDocuments);
+        }
+
+        try {
+            proposalRepository.save(proposal);
+            proposalDocumentRepository.saveAll(proposal.getProposalDocuments()); // Save the proposal documents
+            return new ProposalSaveResponse() {
+                {
+                    setProposalId(proposal.getId().toString());
+                }
+            };
+        } catch (DataIntegrityViolationException ex) {
+            if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
+                logger.info("Proposal error ==========> id: " + ex.getMessage());
+                throw new DuplicateContactException("This proposal already exists.");
+            }
+            throw ex; // Rethrow if not related to constraint violation
+        }
+    }
+
+    private Proposal prepareProposal(HttpServletRequest request, ProposalDto proposalDto) throws Exception {
+        Proposal proposal = new Proposal();
+
+        Long userId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "user-id").toString());
+        Long orgId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "organization-id").toString());
+        logger.info("user ID: ==============================>" + userId);
+        proposal.setInsuranceCompanyId(proposalDto.getInsuranceCompanyId());
+        proposal.setPolicyTypeId(proposalDto.getPolicyTypeId());
+        proposal.setStartDate(proposalDto.getStartDate());
+        proposal.setEndDate(proposalDto.getEndDate());
+        proposal.setCompanyId(orgId);
+        proposal.setContactId(proposalDto.getContactId());
+        proposal.setUpdatedBy(Long.valueOf(userId));
+        proposal.setReferenceNumber(proposalDto.getReferenceNumber());
+        return proposal;
+    }
+
+    private Set<ProposalDocument> prepareProposalDocumentObject(ProposalDto proposalDto, Proposal proposal,
+            Long userId) {
+        Set<ProposalDocument> proposalDocuments = new HashSet<>();
+        proposalDto.getProposalDocuments().forEach(documentDto -> {
+            logger.debug("Document name: " + documentDto.getDocumentName());
+            logger.debug("blob url: " + documentDto.getBlobUrl());
+
+            // Skip empty documents
+            if (documentDto.getBlobUrl() == null ||
+                    documentDto.getDocumentName() == null ||
+                    documentDto.getDocumentType() == null) {
+                logger.debug("Skipping empty document DTO");
+                return;
+            }
+
+            ProposalDocument document = new ProposalDocument();
+            document.setFolderName(documentDto.getFolderName());
+            document.setDocumentName(documentDto.getDocumentName());
+            document.setBlobUrl(documentDto.getBlobUrl());
+            document.setDocumentType(documentDto.getDocumentType());
+            document.setUpdatedBy(Long.valueOf(userId));
+            document.setProposal(proposal); // Set the proposal reference
+            proposalDocuments.add(document);
+        });
+        return proposalDocuments;
     }
 
     private Set<ProposalDocumentDto> prepareProposalDocuments(List<Map<String, String>> proposalDocs, Proposal proposal,

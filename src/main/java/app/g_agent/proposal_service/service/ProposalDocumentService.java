@@ -1,22 +1,38 @@
 package app.g_agent.proposal_service.service;
 
+import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import app.g_agent.proposal_service.dto.ProposalDocumentDto;
 import app.g_agent.proposal_service.model.ProposalDocument;
 import app.g_agent.proposal_service.repository.ProposalDocumentRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Service
 public class ProposalDocumentService {
+
+    @Value("${backblaze.s3.bucket-name}")
+    private String bucketName;
+
+    @Autowired
+    B2ClientFactory b2ClientFactory;
 
     private static final Logger logger = LoggerFactory.getLogger(ProposalService.class);
 
@@ -29,7 +45,8 @@ public class ProposalDocumentService {
     }
 
     @Transactional
-    public void createProposalDocument(HttpServletRequest request, ProposalDocumentDto proposalDocumentDto) throws Exception {
+    public void createProposalDocument(HttpServletRequest request, ProposalDocumentDto proposalDocumentDto)
+            throws Exception {
         ProposalDocument proposalDocument = new ProposalDocument();
 
         int userId = (int) jwtService.getTokenValue(jwtService.getJWT(request), "user-id");
@@ -52,7 +69,8 @@ public class ProposalDocumentService {
     }
 
     @Transactional
-    public void updateProposalDocument(HttpServletRequest request, ProposalDocumentDto proposalDocumentDto, Long id) throws Exception {
+    public void updateProposalDocument(HttpServletRequest request, ProposalDocumentDto proposalDocumentDto, Long id)
+            throws Exception {
         Optional<ProposalDocument> proposalDocumentOpt = proposalDocumentRepository.findById(id);
 
         if (proposalDocumentOpt.isEmpty()) {
@@ -126,5 +144,37 @@ public class ProposalDocumentService {
             proposalDocumentDto.setCreatedAt(proposalDocument.getCreatedAt());
             return proposalDocumentDto;
         }).collect(Collectors.toList());
+    }
+
+    public boolean deleteProposalDocumentFile(HttpServletRequest request, Long id) {
+
+        // https://s3.<your-region>.backblazeb2.com/<your-bucket-name>/<your-key>
+        // https://s3.us-east-005.backblazeb2.com/gisca-store/2/proposal-service/three-160935-1774934871712.jpeg
+        Optional<ProposalDocument> proposalDocumentOpt = proposalDocumentRepository.findById(id);
+
+        try {
+
+            S3Client s3 = b2ClientFactory.createClient();
+
+            String bucketUrl = proposalDocumentOpt.get().getBlobUrl();
+            
+            String path = bucketUrl.substring(bucketUrl.indexOf(".com/") + 5);
+            int firstSlash = path.indexOf('/');
+            String key = path.substring(firstSlash + 1);
+
+            DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .build();
+
+            s3.deleteObject(deleteRequest);
+
+        } catch (Exception e) {
+            logger.error("Error uploading file to S3: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+
+        return true;
+
     }
 }

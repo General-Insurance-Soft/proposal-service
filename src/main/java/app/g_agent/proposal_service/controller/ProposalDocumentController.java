@@ -81,6 +81,22 @@ public class ProposalDocumentController {
         return ResponseEntity.ok(message);
     }
 
+    @DeleteMapping("/delete-file")
+    public ResponseEntity<?> deleteProposalDocumentFile(HttpServletRequest request, @RequestParam Long id) {
+        Message message = new Message();
+
+        try {
+            proposalDocumentService.deleteProposalDocumentFile(request, id);
+        } catch (Exception ex) {
+            message.setMessage("Error");
+            message.setMessage(ex.getMessage());
+            return ResponseEntity.status(403).body(message);
+        }
+        message.setMessage("Success");
+        message.setMessage("Proposal file deleted successfully");
+        return ResponseEntity.ok(message);
+    }
+
     @GetMapping("/get")
     public ResponseEntity<?> getProposalDocument(HttpServletRequest request, @RequestParam Long id) {
         Message message = new Message();

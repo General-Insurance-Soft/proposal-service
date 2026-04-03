@@ -58,6 +58,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -251,6 +252,8 @@ public class ProposalService {
             document.setFolderName(documentDto.getFolderName());
             document.setDocumentName(documentDto.getDocumentName());
             document.setBlobUrl(documentDto.getBlobUrl());
+            //SET VERSION ID
+            document.setVersionId(documentDto.getVersionId());
             document.setDocumentType(documentDto.getDocumentType());
             document.setUpdatedBy(Long.valueOf(userId));
             document.setProposal(proposal); // Set the proposal reference
@@ -269,6 +272,8 @@ public class ProposalService {
             logger.debug("Blob URL ======>: " + fileMeta.get("blob_url"));
             doc.setBlobUrl((String) fileMeta.get("blob_url"));
             doc.setDocumentType(Long.valueOf(fileMeta.get("type").hashCode())); // Example mapping,
+            logger.debug("version id of proposal ======>: " + fileMeta.get("version_id"));
+            doc.setVersionId((String)fileMeta.get("version_id"));
             proposalDocuments.add(doc);
         }
         logger.debug("Alter proposal documents DTO ======>: " + proposalDocuments.toString());
@@ -335,10 +340,12 @@ public class ProposalService {
                         .contentType(contentType)
                         .build();
 
-                b2.putObject(
+                PutObjectResponse putObjectResponse = b2.putObject(
                         objRequest,
                         software.amazon.awssdk.core.sync.RequestBody.fromBytes(bytes));
 
+                logger.info("Response from S3 for file {}: {}", file.getOriginalFilename(), putObjectResponse.toString());
+                
                 String fileUrl = String.format(
                         "%s/%s/%s",
                         ENDPOINT_URL,
@@ -360,6 +367,7 @@ public class ProposalService {
                     String typeNumber = typeVal.group(1);
                     filesMeta.put("name", name);
                     filesMeta.put("type", typeNumber);
+                    filesMeta.put("version_id", (String)putObjectResponse.versionId());
                 }
 
                 filesMeta.put("blob_url", fileUrl);

@@ -45,6 +45,9 @@ public class ProposalDocument {
     @Column(name = "updated_by", nullable = false)
     private Long updatedBy;
 
+    @Column(name = "version_id")
+    private String versionId;
+
     // Getters and Setters
 
     public Long getId() {
@@ -85,6 +88,14 @@ public class ProposalDocument {
 
     public void setDocumentName(String documentName) {
         this.documentName = documentName;
+    }
+
+    public String getVersionId() {
+        return versionId;
+    }
+
+    public void setVersionId(String versionId) {
+        this.versionId = versionId;
     }
 
     public String getBlobUrl() {

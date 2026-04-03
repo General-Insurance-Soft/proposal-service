@@ -23,6 +23,7 @@ import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Service
@@ -54,6 +55,7 @@ public class ProposalDocumentService {
         proposalDocument.setFolderName(proposalDocumentDto.getFolderName());
         proposalDocument.setDocumentName(proposalDocumentDto.getDocumentName());
         proposalDocument.setBlobUrl(proposalDocumentDto.getBlobUrl());
+        proposalDocument.setVersionId(proposalDocumentDto.getVersionId());
         proposalDocument.setUpdatedBy(Long.valueOf(userId));
         proposalDocument.setDocumentType(proposalDocumentDto.getDocumentType());
 
@@ -84,6 +86,7 @@ public class ProposalDocumentService {
         proposalDocument.setFolderName(proposalDocumentDto.getFolderName());
         proposalDocument.setDocumentName(proposalDocumentDto.getDocumentName());
         proposalDocument.setBlobUrl(proposalDocumentDto.getBlobUrl());
+        proposalDocument.setVersionId(proposalDocumentDto.getVersionId());
         proposalDocument.setUpdatedBy(Long.valueOf(userId));
         proposalDocument.setDocumentType(proposalDocumentDto.getDocumentType());
 
@@ -118,6 +121,7 @@ public class ProposalDocumentService {
             proposalDocumentDto.setProposalId(proposalDocumentOpt.get().getProposal().getId());
             proposalDocumentDto.setFolderName(proposalDocumentOpt.get().getFolderName());
             proposalDocumentDto.setDocumentName(proposalDocumentOpt.get().getDocumentName());
+            proposalDocumentDto.setVersionId(proposalDocumentOpt.get().getVersionId());
             proposalDocumentDto.setBlobUrl(proposalDocumentOpt.get().getBlobUrl());
             proposalDocumentDto.setDocumentType(proposalDocumentOpt.get().getDocumentType());
             proposalDocumentDto.setUpdatedBy(proposalDocumentOpt.get().getUpdatedBy());
@@ -138,6 +142,7 @@ public class ProposalDocumentService {
             proposalDocumentDto.setProposalId(proposalDocument.getProposal().getId());
             proposalDocumentDto.setFolderName(proposalDocument.getFolderName());
             proposalDocumentDto.setDocumentName(proposalDocument.getDocumentName());
+            proposalDocumentDto.setVersionId(proposalDocument.getVersionId());
             proposalDocumentDto.setBlobUrl(proposalDocument.getBlobUrl());
             proposalDocumentDto.setDocumentType(proposalDocument.getDocumentType());
             proposalDocumentDto.setUpdatedBy(proposalDocument.getUpdatedBy());
@@ -165,9 +170,11 @@ public class ProposalDocumentService {
             DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
                     .bucket(bucketName)
                     .key(key)
+                    .versionId(proposalDocumentOpt.get().getVersionId())
                     .build();
 
-            s3.deleteObject(deleteRequest);
+            DeleteObjectResponse deleteResponse = s3.deleteObject(deleteRequest);
+            logger.info("Delete response: ======================>"+ deleteResponse.toString());
 
         } catch (Exception e) {
             logger.error("Error uploading file to S3: " + e.getMessage());

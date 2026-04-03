@@ -25,6 +25,9 @@ public class ProposalDocumentDto {
     @JsonProperty("blob_url")
     private String blobUrl;
 
+    @JsonProperty("version_id")
+    private String versionId;
+
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
 
@@ -68,6 +71,14 @@ public class ProposalDocumentDto {
         this.blobUrl = blobUrl;
     }
 
+    public String getVersionId() {
+        return versionId;
+    }
+
+    public void setVersionId(String versionId) {
+        this.versionId = versionId;
+    }
+    
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }

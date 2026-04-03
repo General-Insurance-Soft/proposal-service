@@ -151,18 +151,22 @@ public class ProposalDocumentService {
         }).collect(Collectors.toList());
     }
 
-    public boolean deleteProposalDocumentFile(HttpServletRequest request, Long id) {
+    public boolean deleteProposalDocumentFile(HttpServletRequest request, Long id) throws Exception {
 
         // https://s3.<your-region>.backblazeb2.com/<your-bucket-name>/<your-key>
         // https://s3.us-east-005.backblazeb2.com/gisca-store/2/proposal-service/three-160935-1774934871712.jpeg
         Optional<ProposalDocument> proposalDocumentOpt = proposalDocumentRepository.findById(id);
+
+        if (!proposalDocumentOpt.isPresent()) {
+            throw new Exception("The proposal document cannot be found");
+        }
 
         try {
 
             S3Client s3 = b2ClientFactory.createClient();
 
             String bucketUrl = proposalDocumentOpt.get().getBlobUrl();
-            
+
             String path = bucketUrl.substring(bucketUrl.indexOf(".com/") + 5);
             int firstSlash = path.indexOf('/');
             String key = path.substring(firstSlash + 1);
@@ -174,7 +178,13 @@ public class ProposalDocumentService {
                     .build();
 
             DeleteObjectResponse deleteResponse = s3.deleteObject(deleteRequest);
-            logger.info("Delete response: ======================>"+ deleteResponse.toString());
+            logger.info("Delete response: ======================>" + deleteResponse.toString());
+
+            if (deleteResponse.sdkHttpResponse().isSuccessful()) {
+                proposalDocumentRepository.delete(proposalDocumentOpt.get());
+            } else {
+                throw new Exception("Failed to delete the file from S3");
+            }
 
         } catch (Exception e) {
             logger.error("Error uploading file to S3: " + e.getMessage());

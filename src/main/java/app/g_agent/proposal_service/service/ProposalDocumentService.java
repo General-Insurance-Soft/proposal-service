@@ -1,7 +1,10 @@
 package app.g_agent.proposal_service.service;
 
+import static org.junit.jupiter.api.DynamicTest.stream;
+
 import java.net.URI;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Optional;
@@ -29,10 +32,12 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectResponse;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsResponse;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.model.Delete;
 
 @Service
 public class ProposalDocumentService {
@@ -228,5 +233,42 @@ public class ProposalDocumentService {
 
         return true;
 
+    }
+
+    public void deleteProposalDocumentFiles(Proposal proposal) {
+
+        Map<String, String> keys = new HashMap<>();
+
+        proposal.getProposalDocuments().stream().forEach(proposalDocument -> {
+            String bucketUrl = proposalDocument.getBlobUrl();
+            if (bucketUrl != null && !bucketUrl.isEmpty()) {
+                String path = bucketUrl.substring(bucketUrl.indexOf(".com/") + 5);
+                int firstSlash = path.indexOf('/');
+                String key = path.substring(firstSlash + 1);
+                keys.put(key, proposalDocument.getVersionId());
+            }
+        });
+
+        S3Client s3 = b2ClientFactory.createClient();
+
+        List<ObjectIdentifier> objects = keys.entrySet().stream()
+                .map(entry -> ObjectIdentifier.builder().key(entry.getKey()).versionId(entry.getValue()).build())
+                .collect(Collectors.toList());
+
+        Delete delete = Delete.builder()
+                .objects(objects)
+                .build();
+
+        DeleteObjectsRequest request = DeleteObjectsRequest.builder()
+                .bucket(bucketName)
+                .delete(delete)
+                .build();
+
+        DeleteObjectsResponse response = s3.deleteObjects(request);
+
+        // Optional: check results
+        response.deleted().forEach(d -> System.out.println("Deleted: " + d.key()));
+
+        response.errors().forEach(e -> System.err.println("Failed: " + e.key() + " - " + e.message()));
     }
 }

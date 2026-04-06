@@ -78,6 +78,9 @@ public class ProposalService {
     private ProposalDocumentRepository proposalDocumentRepository;
     private JwtService jwtService;
 
+    @Autowired
+    private ProposalDocumentService proposalDocumentService;
+
     @Value("${backblaze.s3.endpoint-url}")
     private String ENDPOINT_URL;
     @Value("${backblaze.s3.bucket-name}")
@@ -108,6 +111,7 @@ public class ProposalService {
         Optional<Proposal> proposalOpt = proposalRepository.findByIdAndCompanyId(id, orgId);
 
         if (proposalOpt.isPresent()) {
+            proposalDocumentService.deleteProposalDocumentFiles(proposalOpt.get());
             proposalRepository.delete(proposalOpt.get());
         } else {
             throw new Exception("The proposal cannot be found");

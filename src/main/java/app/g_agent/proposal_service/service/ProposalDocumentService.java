@@ -3,8 +3,10 @@ package app.g_agent.proposal_service.service;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.time.Duration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,15 +18,21 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import app.g_agent.proposal_service.dto.ProposalDocumentDto;
+import app.g_agent.proposal_service.model.Proposal;
 import app.g_agent.proposal_service.model.ProposalDocument;
 import app.g_agent.proposal_service.repository.ProposalDocumentRepository;
+import app.g_agent.proposal_service.repository.ProposalRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectResponse;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 @Service
 public class ProposalDocumentService {
@@ -34,6 +42,9 @@ public class ProposalDocumentService {
 
     @Autowired
     B2ClientFactory b2ClientFactory;
+
+    @Autowired
+    private ProposalRepository proposalRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(ProposalService.class);
 
@@ -101,17 +112,6 @@ public class ProposalDocumentService {
         }
     }
 
-    @Transactional
-    public void deleteProposalDocument(HttpServletRequest request, Long id) throws Exception {
-        Optional<ProposalDocument> proposalDocumentOpt = proposalDocumentRepository.findById(id);
-
-        if (proposalDocumentOpt.isPresent()) {
-            proposalDocumentRepository.delete(proposalDocumentOpt.get());
-        } else {
-            throw new Exception("The proposal document cannot be found");
-        }
-    }
-
     public ProposalDocumentDto getProposalDocument(HttpServletRequest request, Long id) throws Exception {
         Optional<ProposalDocument> proposalDocumentOpt = proposalDocumentRepository.findById(id);
 
@@ -133,22 +133,53 @@ public class ProposalDocumentService {
         }
     }
 
-    public List<ProposalDocumentDto> getProposalDocuments(HttpServletRequest request) throws Exception {
-        List<ProposalDocument> proposalDocuments = proposalDocumentRepository.findAll();
+    public List<ProposalDocumentDto> getProposalDocuments(HttpServletRequest request, Long proposalId)
+            throws Exception {
 
-        return proposalDocuments.stream().map(proposalDocument -> {
-            ProposalDocumentDto proposalDocumentDto = new ProposalDocumentDto();
-            proposalDocumentDto.setId(proposalDocument.getId());
-            proposalDocumentDto.setProposalId(proposalDocument.getProposal().getId());
-            proposalDocumentDto.setFolderName(proposalDocument.getFolderName());
-            proposalDocumentDto.setDocumentName(proposalDocument.getDocumentName());
-            proposalDocumentDto.setVersionId(proposalDocument.getVersionId());
-            proposalDocumentDto.setBlobUrl(proposalDocument.getBlobUrl());
-            proposalDocumentDto.setDocumentType(proposalDocument.getDocumentType());
-            proposalDocumentDto.setUpdatedBy(proposalDocument.getUpdatedBy());
-            proposalDocumentDto.setCreatedAt(proposalDocument.getCreatedAt());
-            return proposalDocumentDto;
-        }).collect(Collectors.toList());
+        try {
+
+            Long orgId = Long
+                    .parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "organization-id").toString());
+            Optional<Proposal> proposalOpt = proposalRepository.findByIdAndCompanyId(proposalId, orgId);
+
+            // get proposal documents by proposal id
+            if (proposalOpt.isEmpty()) {
+                throw new Exception("The proposal cannot be found");
+            }
+
+            Optional<List<ProposalDocument>> proposalDocuments = proposalDocumentRepository
+                    .findByProposalId(proposalId);
+
+            if (proposalDocuments.isEmpty()) {
+                return new ArrayList<>();
+            }
+
+            // List<ProposalDocument> proposalDocuments =
+            // proposalDocumentRepository.findAll();
+
+            return proposalDocuments.get().stream().map(proposalDocument -> {
+                ProposalDocumentDto proposalDocumentDto = new ProposalDocumentDto();
+                proposalDocumentDto.setId(proposalDocument.getId());
+                proposalDocumentDto.setProposalId(proposalDocument.getProposal().getId());
+                proposalDocumentDto.setFolderName(proposalDocument.getFolderName());
+                proposalDocumentDto.setDocumentName(proposalDocument.getDocumentName());
+                proposalDocumentDto.setVersionId(proposalDocument.getVersionId());
+                if (proposalDocument.getBlobUrl() != null) {
+                    String bucketUrl = b2ClientFactory.getPreSignedUrl(proposalDocument.getBlobUrl());
+                    proposalDocumentDto.setBlobUrl(bucketUrl);
+                } else {
+                    proposalDocumentDto.setBlobUrl("");
+                }
+                proposalDocumentDto.setBlobUrl(proposalDocument.getBlobUrl());
+                proposalDocumentDto.setDocumentType(proposalDocument.getDocumentType());
+                proposalDocumentDto.setUpdatedBy(proposalDocument.getUpdatedBy());
+                proposalDocumentDto.setCreatedAt(proposalDocument.getCreatedAt());
+                return proposalDocumentDto;
+            }).collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.error("Error fetching proposal documents: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
     }
 
     public boolean deleteProposalDocumentFile(HttpServletRequest request, Long id) throws Exception {
@@ -163,27 +194,31 @@ public class ProposalDocumentService {
 
         try {
 
-            S3Client s3 = b2ClientFactory.createClient();
-
             String bucketUrl = proposalDocumentOpt.get().getBlobUrl();
 
-            String path = bucketUrl.substring(bucketUrl.indexOf(".com/") + 5);
-            int firstSlash = path.indexOf('/');
-            String key = path.substring(firstSlash + 1);
+            if (bucketUrl != null && !bucketUrl.isEmpty()) {
+                S3Client s3 = b2ClientFactory.createClient();
 
-            DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(key)
-                    .versionId(proposalDocumentOpt.get().getVersionId())
-                    .build();
+                String path = bucketUrl.substring(bucketUrl.indexOf(".com/") + 5);
+                int firstSlash = path.indexOf('/');
+                String key = path.substring(firstSlash + 1);
 
-            DeleteObjectResponse deleteResponse = s3.deleteObject(deleteRequest);
-            logger.info("Delete response: ======================>" + deleteResponse.toString());
+                DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(key)
+                        .versionId(proposalDocumentOpt.get().getVersionId())
+                        .build();
 
-            if (deleteResponse.sdkHttpResponse().isSuccessful()) {
-                proposalDocumentRepository.delete(proposalDocumentOpt.get());
+                DeleteObjectResponse deleteResponse = s3.deleteObject(deleteRequest);
+                logger.info("Delete response: ======================>" + deleteResponse.toString());
+
+                if (deleteResponse.sdkHttpResponse().isSuccessful()) {
+                    proposalDocumentRepository.delete(proposalDocumentOpt.get());
+                } else {
+                    throw new Exception("Failed to delete the file from S3");
+                }
             } else {
-                throw new Exception("Failed to delete the file from S3");
+                proposalDocumentRepository.delete(proposalDocumentOpt.get());
             }
 
         } catch (Exception e) {

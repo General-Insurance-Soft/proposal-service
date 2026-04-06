@@ -83,6 +83,9 @@ public class ProposalService {
     @Value("${backblaze.s3.bucket-name}")
     private String bucketName;
 
+    @Autowired
+    B2ClientFactory b2ClientFactory;
+
     public ProposalService(ProposalRepository proposalRepository, ProposalDocumentRepository proposalDocumentRepository,
             JwtService jwtService) {
         this.proposalRepository = proposalRepository;
@@ -136,7 +139,13 @@ public class ProposalService {
                 documentDto.setId(document.getId());
                 documentDto.setFolderName(document.getFolderName());
                 documentDto.setDocumentName(document.getDocumentName());
-                documentDto.setBlobUrl(document.getBlobUrl());
+
+                if (document.getBlobUrl() != null) {
+                    String bucketUrl = b2ClientFactory.getPreSignedUrl(document.getBlobUrl());
+                    documentDto.setBlobUrl(bucketUrl);
+                } else {
+                    documentDto.setBlobUrl("");
+                }
                 documentDto.setDocumentType(document.getDocumentType());
                 documentDto.setUpdatedBy(document.getUpdatedBy());
                 documentDto.setCreatedAt(document.getCreatedAt());
@@ -252,7 +261,7 @@ public class ProposalService {
             document.setFolderName(documentDto.getFolderName());
             document.setDocumentName(documentDto.getDocumentName());
             document.setBlobUrl(documentDto.getBlobUrl());
-            //SET VERSION ID
+            // SET VERSION ID
             document.setVersionId(documentDto.getVersionId());
             document.setDocumentType(documentDto.getDocumentType());
             document.setUpdatedBy(Long.valueOf(userId));
@@ -273,7 +282,7 @@ public class ProposalService {
             doc.setBlobUrl((String) fileMeta.get("blob_url"));
             doc.setDocumentType(Long.valueOf(fileMeta.get("type").hashCode())); // Example mapping,
             logger.debug("version id of proposal ======>: " + fileMeta.get("version_id"));
-            doc.setVersionId((String)fileMeta.get("version_id"));
+            doc.setVersionId((String) fileMeta.get("version_id"));
             proposalDocuments.add(doc);
         }
         logger.debug("Alter proposal documents DTO ======>: " + proposalDocuments.toString());
@@ -297,11 +306,7 @@ public class ProposalService {
 
         List<Map<String, String>> filesMetaList = new ArrayList<>();
         try {
-            S3Client b2 = S3Client.builder()
-                    .region(Region.of(region))
-                    .credentialsProvider(ProfileCredentialsProvider.create("gisca"))
-                    .endpointOverride(new URI(ENDPOINT_URL))
-                    .build();
+            S3Client b2 = b2ClientFactory.createClient();
 
             for (MultipartFile file : filesList) {
 
@@ -344,8 +349,9 @@ public class ProposalService {
                         objRequest,
                         software.amazon.awssdk.core.sync.RequestBody.fromBytes(bytes));
 
-                logger.info("Response from S3 for file {}: {}", file.getOriginalFilename(), putObjectResponse.toString());
-                
+                logger.info("Response from S3 for file {}: {}", file.getOriginalFilename(),
+                        putObjectResponse.toString());
+
                 String fileUrl = String.format(
                         "%s/%s/%s",
                         ENDPOINT_URL,
@@ -367,7 +373,7 @@ public class ProposalService {
                     String typeNumber = typeVal.group(1);
                     filesMeta.put("name", name);
                     filesMeta.put("type", typeNumber);
-                    filesMeta.put("version_id", (String)putObjectResponse.versionId());
+                    filesMeta.put("version_id", (String) putObjectResponse.versionId());
                 }
 
                 filesMeta.put("blob_url", fileUrl);
@@ -473,9 +479,16 @@ public class ProposalService {
             proposalDto.setInsuranceCompanyId((Long) row[6]);
             proposalDto.setPolicyTypeId((Long) row[7]);
             // proposalDto.setStartDate(row[1]);
-            proposalDto.setStartDate(((java.sql.Date) row[1]).toLocalDate());
-
-            proposalDto.setEndDate(((java.sql.Date) row[0]).toLocalDate());
+            if (row[1] != null) {
+                proposalDto.setStartDate(((java.sql.Date) row[1]).toLocalDate());
+            } else {
+                proposalDto.setStartDate(null);
+            }
+            if (row[0] != null) {
+                proposalDto.setEndDate(((java.sql.Date) row[0]).toLocalDate());
+            } else {
+                proposalDto.setEndDate(null);
+            }
             proposalDto.setCompanyId((Long) row[2]);
             proposalDto.setContactId((Long) row[3]);
             proposalDto.setUpdatedBy((Long) row[9]);
@@ -505,7 +518,14 @@ public class ProposalService {
                             docDto.setId(document.getId());
                             docDto.setFolderName(document.getFolderName());
                             docDto.setDocumentName(document.getDocumentName());
-                            docDto.setBlobUrl(document.getBlobUrl());
+
+                            if (document.getBlobUrl() != null) {
+                                String bucketUrl = b2ClientFactory.getPreSignedUrl(document.getBlobUrl());
+                                docDto.setBlobUrl(bucketUrl);
+                            } else {
+                                docDto.setBlobUrl("");
+                            }
+
                             docDto.setDocumentType(document.getDocumentType());
                             docDto.setUpdatedBy(document.getUpdatedBy());
                             docDto.setCreatedAt(document.getCreatedAt());
@@ -628,7 +648,14 @@ public class ProposalService {
                 documentDto.setId(document.getId());
                 documentDto.setFolderName(document.getFolderName());
                 documentDto.setDocumentName(document.getDocumentName());
-                documentDto.setBlobUrl(document.getBlobUrl());
+
+                if (document.getBlobUrl() != null) {
+                    String bucketUrl = b2ClientFactory.getPreSignedUrl(document.getBlobUrl());
+                    documentDto.setBlobUrl(bucketUrl);
+                } else {
+                    documentDto.setBlobUrl("");
+                }
+
                 documentDto.setDocumentType(document.getDocumentType());
                 documentDto.setUpdatedBy(document.getUpdatedBy());
                 documentDto.setCreatedAt(document.getCreatedAt());

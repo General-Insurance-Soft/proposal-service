@@ -70,7 +70,7 @@ public class ProposalDocumentController {
         Message message = new Message();
 
         try {
-            proposalDocumentService.deleteProposalDocument(request, id);
+            proposalDocumentService.deleteProposalDocumentFile(request, id);
         } catch (Exception ex) {
             message.setMessage("Error");
             message.setMessage(ex.getMessage());
@@ -111,11 +111,11 @@ public class ProposalDocumentController {
     }
 
     @GetMapping("/get-proposal-documents")
-    public ResponseEntity<?> getProposalDocuments(HttpServletRequest request) {
+    public ResponseEntity<?> getProposalDocuments(HttpServletRequest request, @RequestParam Long proposalId) {
         Message message = new Message();
 
         try {
-            return ResponseEntity.ok(proposalDocumentService.getProposalDocuments(request));
+            return ResponseEntity.ok(proposalDocumentService.getProposalDocuments(request, proposalId));
         } catch (Exception ex) {
             message.setMessage("Error");
             message.setMessage(ex.getMessage());

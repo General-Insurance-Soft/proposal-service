@@ -393,8 +393,8 @@ public class ProposalService {
     }
 
     @Transactional
-    public ResponseEntity<?> updateProposal(HttpServletRequest request, ProposalDto proposalDto, Long id)
-            throws Exception {
+    public ResponseEntity<?> updateProposal(HttpServletRequest request, ProposalDto proposalDto,
+            List<MultipartFile> files, Long id) throws Exception {
 
         Long orgId = Long.parseLong(jwtService.getTokenValue(jwtService.getJWT(request), "organization-id").toString());
         Optional<Proposal> proposalOpt = proposalRepository.findByIdAndCompanyId(id, orgId);
@@ -417,33 +417,50 @@ public class ProposalService {
         proposal.setUpdatedBy(Long.valueOf(userId));
         proposal.setReferenceNumber(proposalDto.getReferenceNumber());
 
+        List<Map<String, String>> proposalDocs = this.uploadFilesToS3(files, orgId);
+        Set<ProposalDocumentDto> proposalDocumentDtos = this.prepareProposalDocuments(proposalDocs, proposal, userId);
+        proposalDto.setProposalDocuments(proposalDocumentDtos);
+
+        Set<ProposalDocument> existingDocs = proposal.getProposalDocuments();
+        Set<ProposalDocument> incomingDocuments = null;
         if (proposalDto.getProposalDocuments() != null) {
             logger.info("proposalDto.getProposalDocuments() not null");
-            Set<ProposalDocument> proposalDocuments = new HashSet<>();
-            proposalDto.getProposalDocuments().forEach(documentDto -> {
-                logger.debug("Document name: " + documentDto.getDocumentName());
-                logger.debug("blob url: " + documentDto.getBlobUrl());
-
-                // Skip empty documents
-                if (documentDto.getBlobUrl() == null ||
-                        documentDto.getDocumentName() == null ||
-                        documentDto.getDocumentType() == null) {
-                    logger.debug("Skipping empty document DTO");
-                    return;
-                }
-
-                ProposalDocument document = new ProposalDocument();
-                document.setFolderName(documentDto.getFolderName());
-                document.setDocumentName(documentDto.getDocumentName());
-                document.setBlobUrl(documentDto.getBlobUrl());
-                document.setDocumentType(documentDto.getDocumentType());
-                document.setUpdatedBy(Long.valueOf(userId));
-                document.setProposal(proposal); // Set the proposal reference
-                proposalDocuments.add(document);
-            });
-            proposal.getProposalDocuments().clear();
-            proposal.getProposalDocuments().addAll(proposalDocuments);
+            incomingDocuments = this.prepareProposalDocumentObject(proposalDto, proposal, userId);
+            // proposal.setProposalDocuments(proposalDocuments);
         }
+        for (ProposalDocument incoming : incomingDocuments) {
+            existingDocs.add(incoming);
+        }
+
+        proposal.setProposalDocuments(existingDocs);
+
+        // if (proposalDto.getProposalDocuments() != null) {
+        // logger.info("proposalDto.getProposalDocuments() not null");
+        // Set<ProposalDocument> proposalDocuments = new HashSet<>();
+        // proposalDto.getProposalDocuments().forEach(documentDto -> {
+        // logger.debug("Document name: " + documentDto.getDocumentName());
+        // logger.debug("blob url: " + documentDto.getBlobUrl());
+
+        // // Skip empty documents
+        // if (documentDto.getBlobUrl() == null ||
+        // documentDto.getDocumentName() == null ||
+        // documentDto.getDocumentType() == null) {
+        // logger.debug("Skipping empty document DTO");
+        // return;
+        // }
+
+        // ProposalDocument document = new ProposalDocument();
+        // document.setFolderName(documentDto.getFolderName());
+        // document.setDocumentName(documentDto.getDocumentName());
+        // document.setBlobUrl(documentDto.getBlobUrl());
+        // document.setDocumentType(documentDto.getDocumentType());
+        // document.setUpdatedBy(Long.valueOf(userId));
+        // document.setProposal(proposal); // Set the proposal reference
+        // proposalDocuments.add(document);
+        // });
+        // proposal.getProposalDocuments().clear();
+        // proposal.getProposalDocuments().addAll(proposalDocuments);
+        // }
 
         try {
             proposalRepository.save(proposal);
@@ -451,14 +468,10 @@ public class ProposalService {
             message.setMessage("Proposal updated successfully");
             return ResponseEntity.status(200).body(message);
         } catch (DataIntegrityViolationException ex) {
-            if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
-                logger.info("Proposal error ==========> id: " + ex.getMessage());
-                Message message = new Message();
-                message.setMessage("This proposal already exists.");
-                return ResponseEntity.status(409).body(message);
-            }
+
             throw ex; // Rethrow if not related to constraint violation
         }
+
     }
 
     @Transactional

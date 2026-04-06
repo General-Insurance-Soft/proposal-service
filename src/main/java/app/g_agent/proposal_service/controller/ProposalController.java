@@ -66,7 +66,8 @@ public class ProposalController {
 
         try {
 
-            return new ResponseEntity<ProposalSaveResponse>(proposalService.createProposalWithFileMeta(request, proposalDto),
+            return new ResponseEntity<ProposalSaveResponse>(
+                    proposalService.createProposalWithFileMeta(request, proposalDto),
                     HttpStatus.CREATED);
         } catch (Exception ex) {
             message.setMessage(ex.getMessage());
@@ -75,11 +76,14 @@ public class ProposalController {
 
     }
 
-    @PutMapping("/update")
-    public ResponseEntity<?> updateProposal(HttpServletRequest request, @Valid @RequestBody ProposalDto proposalDto,
-            @RequestParam Long id) {
+    @PutMapping(value = "/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> updateProposal(
+            HttpServletRequest request,
+            @RequestParam Long id,
+            @RequestPart("data") @Valid ProposalDto data,
+            @RequestPart("files") List<MultipartFile> files) {
         try {
-            return proposalService.updateProposal(request, proposalDto, id);
+            return proposalService.updateProposal(request, data, files, id);
         } catch (Exception ex) {
             return ResponseEntity.status(501).body("Error: " + ex.getMessage());
         }
